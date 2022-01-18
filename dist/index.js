@@ -61,7 +61,8 @@ exports.getVersionFromCsproj = getVersionFromCsproj;
 const getVersion = (options) => __awaiter(void 0, void 0, void 0, function* () {
     const { project } = options;
     core.debug(`project path: ${project}`);
-    const projectFilePath = path.resolve(__dirname, project);
+    // const projectFilePath = path.resolve(project)
+    const projectFilePath = project;
     const extname = path.extname(projectFilePath);
     const content = yield fs.readFile(projectFilePath, { encoding: 'utf-8' });
     let version = '';
@@ -132,16 +133,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 const getVersion_1 = __nccwpck_require__(936);
 const inputs_1 = __nccwpck_require__(180);
 const outputs_1 = __nccwpck_require__(314);
+const path_1 = __importDefault(__nccwpck_require__(17));
+const workspace = (_a = process.env.GITHUB_WORKSPACE) !== null && _a !== void 0 ? _a : '';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        let message = '';
         try {
             const project = core.getInput(inputs_1.inputs.project);
-            const result = yield (0, getVersion_1.getVersion)({ project });
+            const projectPath = path_1.default.resolve(workspace, project);
+            if (!projectPath) {
+                message = 'Does not provide exists file path';
+                core.error(message);
+                throw new Error(message);
+            }
+            core.notice(`File path: ${projectPath}`);
+            const result = yield (0, getVersion_1.getVersion)({ project: projectPath });
             core.setOutput(outputs_1.outputs.version, result);
         }
         catch (error) {
