@@ -9,7 +9,7 @@ const workspace = process.env.GITHUB_WORKSPACE ?? ''
 async function run(): Promise<void> {
   try {
     const project = core.getInput(inputs.project)
-    const projectPath = path.resolve(workspace, workspace ? '..' : '', project)
+    const projectPath = path.resolve(workspace, project)
 
     // eslint-disable-next-line no-console
     console.info('workspace', workspace)

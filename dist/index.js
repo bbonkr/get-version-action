@@ -148,7 +148,7 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const project = core.getInput(inputs_1.inputs.project);
-            const projectPath = path_1.default.resolve(workspace, workspace ? '..' : '', project);
+            const projectPath = path_1.default.resolve(workspace, project);
             // eslint-disable-next-line no-console
             console.info('workspace', workspace);
             // eslint-disable-next-line no-console
