@@ -146,16 +146,16 @@ const path_1 = __importDefault(__nccwpck_require__(17));
 const workspace = (_a = process.env.GITHUB_WORKSPACE) !== null && _a !== void 0 ? _a : '';
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        let message = '';
         try {
             const project = core.getInput(inputs_1.inputs.project);
             const projectPath = path_1.default.resolve(workspace, project);
-            // eslint-disable-next-line no-console
-            console.info('workspace', workspace);
-            // eslint-disable-next-line no-console
-            console.info('projectPath', projectPath);
             if (!projectPath) {
-                throw new Error('Does not provide exists file path');
+                message = 'Does not provide exists file path';
+                core.error(message);
+                throw new Error(message);
             }
+            core.notice(`File path: ${projectPath}`);
             const result = yield (0, getVersion_1.getVersion)({ project: projectPath });
             core.setOutput(outputs_1.outputs.version, result);
         }
