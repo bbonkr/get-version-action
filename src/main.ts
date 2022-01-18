@@ -4,9 +4,10 @@ import {inputs} from './inputs'
 import {outputs} from './outputs'
 import path from 'path'
 
+const workspace = process.env.GITHUB_WORKSPACE ?? ''
+
 async function run(): Promise<void> {
   try {
-    const workspace = process.env.GITHUB_WORKSPACE ?? ''
     const project = core.getInput(inputs.project)
     const projectPath = path.resolve(workspace, workspace ? '..' : '', project)
 
