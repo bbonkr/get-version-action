@@ -36,6 +36,7 @@ jobs:
         id: get_version
         with:
           project: ./package.json
+        
       - name: log
         run: |
           echo "${{ steps.get_version.outputs.version }}"
