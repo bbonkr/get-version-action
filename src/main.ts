@@ -7,18 +7,20 @@ import path from 'path'
 const workspace = process.env.GITHUB_WORKSPACE ?? ''
 
 async function run(): Promise<void> {
+  let message = ''
   try {
     const project = core.getInput(inputs.project)
+
     const projectPath = path.resolve(workspace, project)
 
-    // eslint-disable-next-line no-console
-    console.info('workspace', workspace)
-
-    // eslint-disable-next-line no-console
-    console.info('projectPath', projectPath)
     if (!projectPath) {
-      throw new Error('Does not provide exists file path')
+      message = 'Does not provide exists file path'
+      core.error(message)
+      throw new Error(message)
     }
+
+    core.notice(`File path: ${projectPath}`)
+
     const result = await getVersion({project: projectPath})
 
     core.setOutput(outputs.version, result)
