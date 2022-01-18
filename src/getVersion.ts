@@ -20,7 +20,7 @@ export const getVersionFromCsproj = (content: string): string => {
   const parser = new xmldom.DOMParser()
   const xmlDoc = parser.parseFromString(content)
 
-  const node = xpath.select('//Version/text()', xmlDoc, true)
+  const node = xpath.select('string(//Version)', xmlDoc, true)
 
   return node?.toString() ?? ''
 }

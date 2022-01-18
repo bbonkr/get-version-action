@@ -42,7 +42,7 @@ exports.getVersion = exports.getVersionFromCsproj = exports.getVersionFromPackag
 const core = __importStar(__nccwpck_require__(186));
 const fs = __importStar(__nccwpck_require__(292));
 const path = __importStar(__nccwpck_require__(17));
-const xmldom_1 = __importDefault(__nccwpck_require__(286));
+const xmldom_1 = __importDefault(__nccwpck_require__(213));
 const xpath_1 = __importDefault(__nccwpck_require__(319));
 const getVersionFromPackageJson = (content) => {
     const packageJson = JSON.parse(content);
@@ -54,7 +54,7 @@ const getVersionFromCsproj = (content) => {
     var _a;
     const parser = new xmldom_1.default.DOMParser();
     const xmlDoc = parser.parseFromString(content);
-    const node = xpath_1.default.select('//Version/text()', xmlDoc, true);
+    const node = xpath_1.default.select('string(//Version)', xmlDoc, true);
     return (_a = node === null || node === void 0 ? void 0 : node.toString()) !== null && _a !== void 0 ? _a : '';
 };
 exports.getVersionFromCsproj = getVersionFromCsproj;
@@ -1444,289 +1444,232 @@ exports.checkBypass = checkBypass;
 
 /***/ }),
 
-/***/ 294:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-module.exports = __nccwpck_require__(219);
-
-
-/***/ }),
-
-/***/ 219:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ 756:
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 
-var net = __nccwpck_require__(808);
-var tls = __nccwpck_require__(404);
-var http = __nccwpck_require__(685);
-var https = __nccwpck_require__(687);
-var events = __nccwpck_require__(361);
-var assert = __nccwpck_require__(491);
-var util = __nccwpck_require__(837);
-
-
-exports.httpOverHttp = httpOverHttp;
-exports.httpsOverHttp = httpsOverHttp;
-exports.httpOverHttps = httpOverHttps;
-exports.httpsOverHttps = httpsOverHttps;
-
-
-function httpOverHttp(options) {
-  var agent = new TunnelingAgent(options);
-  agent.request = http.request;
-  return agent;
+/**
+ * "Shallow freezes" an object to render it immutable.
+ * Uses `Object.freeze` if available,
+ * otherwise the immutability is only in the type.
+ *
+ * Is used to create "enum like" objects.
+ *
+ * @template T
+ * @param {T} object the object to freeze
+ * @param {Pick<ObjectConstructor, 'freeze'> = Object} oc `Object` by default,
+ * 				allows to inject custom object constructor for tests
+ * @returns {Readonly<T>}
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
+ */
+function freeze(object, oc) {
+	if (oc === undefined) {
+		oc = Object
+	}
+	return oc && typeof oc.freeze === 'function' ? oc.freeze(object) : object
 }
 
-function httpsOverHttp(options) {
-  var agent = new TunnelingAgent(options);
-  agent.request = http.request;
-  agent.createSocket = createSecureSocket;
-  agent.defaultPort = 443;
-  return agent;
-}
+/**
+ * All mime types that are allowed as input to `DOMParser.parseFromString`
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMParser/parseFromString#Argument02 MDN
+ * @see https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#domparsersupportedtype WHATWG HTML Spec
+ * @see DOMParser.prototype.parseFromString
+ */
+var MIME_TYPE = freeze({
+	/**
+	 * `text/html`, the only mime type that triggers treating an XML document as HTML.
+	 *
+	 * @see DOMParser.SupportedType.isHTML
+	 * @see https://www.iana.org/assignments/media-types/text/html IANA MimeType registration
+	 * @see https://en.wikipedia.org/wiki/HTML Wikipedia
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMParser/parseFromString MDN
+	 * @see https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring WHATWG HTML Spec
+	 */
+	HTML: 'text/html',
 
-function httpOverHttps(options) {
-  var agent = new TunnelingAgent(options);
-  agent.request = https.request;
-  return agent;
-}
+	/**
+	 * Helper method to check a mime type if it indicates an HTML document
+	 *
+	 * @param {string} [value]
+	 * @returns {boolean}
+	 *
+	 * @see https://www.iana.org/assignments/media-types/text/html IANA MimeType registration
+	 * @see https://en.wikipedia.org/wiki/HTML Wikipedia
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMParser/parseFromString MDN
+	 * @see https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring 	 */
+	isHTML: function (value) {
+		return value === MIME_TYPE.HTML
+	},
 
-function httpsOverHttps(options) {
-  var agent = new TunnelingAgent(options);
-  agent.request = https.request;
-  agent.createSocket = createSecureSocket;
-  agent.defaultPort = 443;
-  return agent;
-}
+	/**
+	 * `application/xml`, the standard mime type for XML documents.
+	 *
+	 * @see https://www.iana.org/assignments/media-types/application/xml IANA MimeType registration
+	 * @see https://tools.ietf.org/html/rfc7303#section-9.1 RFC 7303
+	 * @see https://en.wikipedia.org/wiki/XML_and_MIME Wikipedia
+	 */
+	XML_APPLICATION: 'application/xml',
 
+	/**
+	 * `text/html`, an alias for `application/xml`.
+	 *
+	 * @see https://tools.ietf.org/html/rfc7303#section-9.2 RFC 7303
+	 * @see https://www.iana.org/assignments/media-types/text/xml IANA MimeType registration
+	 * @see https://en.wikipedia.org/wiki/XML_and_MIME Wikipedia
+	 */
+	XML_TEXT: 'text/xml',
 
-function TunnelingAgent(options) {
-  var self = this;
-  self.options = options || {};
-  self.proxyOptions = self.options.proxy || {};
-  self.maxSockets = self.options.maxSockets || http.Agent.defaultMaxSockets;
-  self.requests = [];
-  self.sockets = [];
+	/**
+	 * `application/xhtml+xml`, indicates an XML document that has the default HTML namespace,
+	 * but is parsed as an XML document.
+	 *
+	 * @see https://www.iana.org/assignments/media-types/application/xhtml+xml IANA MimeType registration
+	 * @see https://dom.spec.whatwg.org/#dom-domimplementation-createdocument WHATWG DOM Spec
+	 * @see https://en.wikipedia.org/wiki/XHTML Wikipedia
+	 */
+	XML_XHTML_APPLICATION: 'application/xhtml+xml',
 
-  self.on('free', function onFree(socket, host, port, localAddress) {
-    var options = toOptions(host, port, localAddress);
-    for (var i = 0, len = self.requests.length; i < len; ++i) {
-      var pending = self.requests[i];
-      if (pending.host === options.host && pending.port === options.port) {
-        // Detect the request to connect same origin server,
-        // reuse the connection.
-        self.requests.splice(i, 1);
-        pending.request.onSocket(socket);
-        return;
-      }
-    }
-    socket.destroy();
-    self.removeSocket(socket);
-  });
-}
-util.inherits(TunnelingAgent, events.EventEmitter);
+	/**
+	 * `image/svg+xml`,
+	 *
+	 * @see https://www.iana.org/assignments/media-types/image/svg+xml IANA MimeType registration
+	 * @see https://www.w3.org/TR/SVG11/ W3C SVG 1.1
+	 * @see https://en.wikipedia.org/wiki/Scalable_Vector_Graphics Wikipedia
+	 */
+	XML_SVG_IMAGE: 'image/svg+xml',
+})
 
-TunnelingAgent.prototype.addRequest = function addRequest(req, host, port, localAddress) {
-  var self = this;
-  var options = mergeOptions({request: req}, self.options, toOptions(host, port, localAddress));
+/**
+ * Namespaces that are used in this code base.
+ *
+ * @see http://www.w3.org/TR/REC-xml-names
+ */
+var NAMESPACE = freeze({
+	/**
+	 * The XHTML namespace.
+	 *
+	 * @see http://www.w3.org/1999/xhtml
+	 */
+	HTML: 'http://www.w3.org/1999/xhtml',
 
-  if (self.sockets.length >= this.maxSockets) {
-    // We are over limit so we'll add it to the queue.
-    self.requests.push(options);
-    return;
-  }
+	/**
+	 * Checks if `uri` equals `NAMESPACE.HTML`.
+	 *
+	 * @param {string} [uri]
+	 *
+	 * @see NAMESPACE.HTML
+	 */
+	isHTML: function (uri) {
+		return uri === NAMESPACE.HTML
+	},
 
-  // If we are under maxSockets create a new one.
-  self.createSocket(options, function(socket) {
-    socket.on('free', onFree);
-    socket.on('close', onCloseOrRemove);
-    socket.on('agentRemove', onCloseOrRemove);
-    req.onSocket(socket);
+	/**
+	 * The SVG namespace.
+	 *
+	 * @see http://www.w3.org/2000/svg
+	 */
+	SVG: 'http://www.w3.org/2000/svg',
 
-    function onFree() {
-      self.emit('free', socket, options);
-    }
+	/**
+	 * The `xml:` namespace.
+	 *
+	 * @see http://www.w3.org/XML/1998/namespace
+	 */
+	XML: 'http://www.w3.org/XML/1998/namespace',
 
-    function onCloseOrRemove(err) {
-      self.removeSocket(socket);
-      socket.removeListener('free', onFree);
-      socket.removeListener('close', onCloseOrRemove);
-      socket.removeListener('agentRemove', onCloseOrRemove);
-    }
-  });
-};
+	/**
+	 * The `xmlns:` namespace
+	 *
+	 * @see https://www.w3.org/2000/xmlns/
+	 */
+	XMLNS: 'http://www.w3.org/2000/xmlns/',
+})
 
-TunnelingAgent.prototype.createSocket = function createSocket(options, cb) {
-  var self = this;
-  var placeholder = {};
-  self.sockets.push(placeholder);
-
-  var connectOptions = mergeOptions({}, self.proxyOptions, {
-    method: 'CONNECT',
-    path: options.host + ':' + options.port,
-    agent: false,
-    headers: {
-      host: options.host + ':' + options.port
-    }
-  });
-  if (options.localAddress) {
-    connectOptions.localAddress = options.localAddress;
-  }
-  if (connectOptions.proxyAuth) {
-    connectOptions.headers = connectOptions.headers || {};
-    connectOptions.headers['Proxy-Authorization'] = 'Basic ' +
-        new Buffer(connectOptions.proxyAuth).toString('base64');
-  }
-
-  debug('making CONNECT request');
-  var connectReq = self.request(connectOptions);
-  connectReq.useChunkedEncodingByDefault = false; // for v0.6
-  connectReq.once('response', onResponse); // for v0.6
-  connectReq.once('upgrade', onUpgrade);   // for v0.6
-  connectReq.once('connect', onConnect);   // for v0.7 or later
-  connectReq.once('error', onError);
-  connectReq.end();
-
-  function onResponse(res) {
-    // Very hacky. This is necessary to avoid http-parser leaks.
-    res.upgrade = true;
-  }
-
-  function onUpgrade(res, socket, head) {
-    // Hacky.
-    process.nextTick(function() {
-      onConnect(res, socket, head);
-    });
-  }
-
-  function onConnect(res, socket, head) {
-    connectReq.removeAllListeners();
-    socket.removeAllListeners();
-
-    if (res.statusCode !== 200) {
-      debug('tunneling socket could not be established, statusCode=%d',
-        res.statusCode);
-      socket.destroy();
-      var error = new Error('tunneling socket could not be established, ' +
-        'statusCode=' + res.statusCode);
-      error.code = 'ECONNRESET';
-      options.request.emit('error', error);
-      self.removeSocket(placeholder);
-      return;
-    }
-    if (head.length > 0) {
-      debug('got illegal response body from proxy');
-      socket.destroy();
-      var error = new Error('got illegal response body from proxy');
-      error.code = 'ECONNRESET';
-      options.request.emit('error', error);
-      self.removeSocket(placeholder);
-      return;
-    }
-    debug('tunneling connection has established');
-    self.sockets[self.sockets.indexOf(placeholder)] = socket;
-    return cb(socket);
-  }
-
-  function onError(cause) {
-    connectReq.removeAllListeners();
-
-    debug('tunneling socket could not be established, cause=%s\n',
-          cause.message, cause.stack);
-    var error = new Error('tunneling socket could not be established, ' +
-                          'cause=' + cause.message);
-    error.code = 'ECONNRESET';
-    options.request.emit('error', error);
-    self.removeSocket(placeholder);
-  }
-};
-
-TunnelingAgent.prototype.removeSocket = function removeSocket(socket) {
-  var pos = this.sockets.indexOf(socket)
-  if (pos === -1) {
-    return;
-  }
-  this.sockets.splice(pos, 1);
-
-  var pending = this.requests.shift();
-  if (pending) {
-    // If we have pending requests and a socket gets closed a new one
-    // needs to be created to take over in the pool for the one that closed.
-    this.createSocket(pending, function(socket) {
-      pending.request.onSocket(socket);
-    });
-  }
-};
-
-function createSecureSocket(options, cb) {
-  var self = this;
-  TunnelingAgent.prototype.createSocket.call(self, options, function(socket) {
-    var hostHeader = options.request.getHeader('host');
-    var tlsOptions = mergeOptions({}, self.options, {
-      socket: socket,
-      servername: hostHeader ? hostHeader.replace(/:.*$/, '') : options.host
-    });
-
-    // 0 is dummy port for v0.6
-    var secureSocket = tls.connect(0, tlsOptions);
-    self.sockets[self.sockets.indexOf(socket)] = secureSocket;
-    cb(secureSocket);
-  });
-}
-
-
-function toOptions(host, port, localAddress) {
-  if (typeof host === 'string') { // since v0.10
-    return {
-      host: host,
-      port: port,
-      localAddress: localAddress
-    };
-  }
-  return host; // for v0.11 or later
-}
-
-function mergeOptions(target) {
-  for (var i = 1, len = arguments.length; i < len; ++i) {
-    var overrides = arguments[i];
-    if (typeof overrides === 'object') {
-      var keys = Object.keys(overrides);
-      for (var j = 0, keyLen = keys.length; j < keyLen; ++j) {
-        var k = keys[j];
-        if (overrides[k] !== undefined) {
-          target[k] = overrides[k];
-        }
-      }
-    }
-  }
-  return target;
-}
-
-
-var debug;
-if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
-  debug = function() {
-    var args = Array.prototype.slice.call(arguments);
-    if (typeof args[0] === 'string') {
-      args[0] = 'TUNNEL: ' + args[0];
-    } else {
-      args.unshift('TUNNEL:');
-    }
-    console.error.apply(console, args);
-  }
-} else {
-  debug = function() {};
-}
-exports.debug = debug; // for test
+exports.freeze = freeze;
+exports.MIME_TYPE = MIME_TYPE;
+exports.NAMESPACE = NAMESPACE;
 
 
 /***/ }),
 
-/***/ 286:
+/***/ 72:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
+var __webpack_unused_export__;
+var conventions = __nccwpck_require__(756);
+var dom = __nccwpck_require__(389)
+var entities = __nccwpck_require__(508);
+var sax = __nccwpck_require__(58);
+
+var DOMImplementation = dom.DOMImplementation;
+
+var NAMESPACE = conventions.NAMESPACE;
+
+var ParseError = sax.ParseError;
+var XMLReader = sax.XMLReader;
+
+/**
+ * Normalizes line ending according to https://www.w3.org/TR/xml11/#sec-line-ends:
+ *
+ * > XML parsed entities are often stored in computer files which,
+ * > for editing convenience, are organized into lines.
+ * > These lines are typically separated by some combination
+ * > of the characters CARRIAGE RETURN (#xD) and LINE FEED (#xA).
+ * >
+ * > To simplify the tasks of applications, the XML processor must behave
+ * > as if it normalized all line breaks in external parsed entities (including the document entity)
+ * > on input, before parsing, by translating all of the following to a single #xA character:
+ * >
+ * > 1. the two-character sequence #xD #xA
+ * > 2. the two-character sequence #xD #x85
+ * > 3. the single character #x85
+ * > 4. the single character #x2028
+ * > 5. any #xD character that is not immediately followed by #xA or #x85.
+ *
+ * @param {string} input
+ * @returns {string}
+ */
+function normalizeLineEndings(input) {
+	return input
+		.replace(/\r[\n\u0085]/g, '\n')
+		.replace(/[\r\u0085\u2028]/g, '\n')
+}
+
+/**
+ * @typedef Locator
+ * @property {number} [columnNumber]
+ * @property {number} [lineNumber]
+ */
+
+/**
+ * @typedef DOMParserOptions
+ * @property {DOMHandler} [domBuilder]
+ * @property {Function} [errorHandler]
+ * @property {(string) => string} [normalizeLineEndings] used to replace line endings before parsing
+ * 						defaults to `normalizeLineEndings`
+ * @property {Locator} [locator]
+ * @property {Record<string, string>} [xmlns]
+ *
+ * @see normalizeLineEndings
+ */
+
+/**
+ * The DOMParser interface provides the ability to parse XML or HTML source code
+ * from a string into a DOM `Document`.
+ *
+ * _xmldom is different from the spec in that it allows an `options` parameter,
+ * to override the default behavior._
+ *
+ * @param {DOMParserOptions} [options]
+ * @constructor
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMParser
+ * @see https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-parsing-and-serialization
+ */
 function DOMParser(options){
 	this.options = options ||{locator:{}};
 }
@@ -1739,7 +1682,7 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	var locator = options.locator;
 	var defaultNSMap = options.xmlns||{};
 	var isHTML = /\/x?html?$/.test(mimeType);//mimeType.toLowerCase().indexOf('html') > -1;
-  	var entityMap = isHTML?htmlEntity.entityMap:{'lt':'<','gt':'>','amp':'&','quot':'"','apos':"'"};
+  	var entityMap = isHTML ? entities.HTML_ENTITIES : entities.XML_ENTITIES;
 	if(locator){
 		domBuilder.setDocumentLocator(locator)
 	}
@@ -1747,13 +1690,18 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 	sax.errorHandler = buildErrorHandler(errorHandler,domBuilder,locator);
 	sax.domBuilder = options.domBuilder || domBuilder;
 	if(isHTML){
-		defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
+		defaultNSMap[''] = NAMESPACE.HTML;
 	}
-	defaultNSMap.xml = defaultNSMap.xml || 'http://www.w3.org/XML/1998/namespace';
-	if(source && typeof source === 'string'){
-		sax.parse(source,defaultNSMap,entityMap);
-	}else{
-		sax.errorHandler.error("invalid doc source");
+	defaultNSMap.xml = defaultNSMap.xml || NAMESPACE.XML;
+	var normalize = options.normalizeLineEndings || normalizeLineEndings;
+	if (source && typeof source === 'string') {
+		sax.parse(
+			normalize(source),
+			defaultNSMap,
+			entityMap
+		)
+	} else {
+		sax.errorHandler.error('invalid doc source')
 	}
 	return domBuilder.doc;
 }
@@ -1894,6 +1842,7 @@ DOMHandler.prototype = {
 	        var dt = impl.createDocumentType(name, publicId, systemId);
 	        this.locator && position(this.locator,dt)
 	        appendElement(this, dt);
+					this.doc.doctype = dt;
 	    }
 	},
 	/**
@@ -1970,29 +1919,84 @@ function appendElement (hander,node) {
     }
 }//appendChild and setAttributeNS are preformance key
 
-//if(typeof require == 'function'){
-var htmlEntity = __nccwpck_require__(507);
-var sax = __nccwpck_require__(124);
-var XMLReader = sax.XMLReader;
-var ParseError = sax.ParseError;
-var DOMImplementation = exports.DOMImplementation = __nccwpck_require__(555).DOMImplementation;
-exports.XMLSerializer = __nccwpck_require__(555).XMLSerializer ;
+__webpack_unused_export__ = DOMHandler;
+__webpack_unused_export__ = normalizeLineEndings;
 exports.DOMParser = DOMParser;
-exports.__DOMHandler = DOMHandler;
-//}
 
 
 /***/ }),
 
-/***/ 555:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 389:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
-var __webpack_unused_export__;
+var conventions = __nccwpck_require__(756);
+
+var NAMESPACE = conventions.NAMESPACE;
+
+/**
+ * A prerequisite for `[].filter`, to drop elements that are empty
+ * @param {string} input
+ * @returns {boolean}
+ */
+function notEmptyString (input) {
+	return input !== ''
+}
+/**
+ * @see https://infra.spec.whatwg.org/#split-on-ascii-whitespace
+ * @see https://infra.spec.whatwg.org/#ascii-whitespace
+ *
+ * @param {string} input
+ * @returns {string[]} (can be empty)
+ */
+function splitOnASCIIWhitespace(input) {
+	// U+0009 TAB, U+000A LF, U+000C FF, U+000D CR, U+0020 SPACE
+	return input ? input.split(/[\t\n\f\r ]+/).filter(notEmptyString) : []
+}
+
+/**
+ * Adds element as a key to current if it is not already present.
+ *
+ * @param {Record<string, boolean | undefined>} current
+ * @param {string} element
+ * @returns {Record<string, boolean | undefined>}
+ */
+function orderedSetReducer (current, element) {
+	if (!current.hasOwnProperty(element)) {
+		current[element] = true;
+	}
+	return current;
+}
+
+/**
+ * @see https://infra.spec.whatwg.org/#ordered-set
+ * @param {string} input
+ * @returns {string[]}
+ */
+function toOrderedSet(input) {
+	if (!input) return [];
+	var list = splitOnASCIIWhitespace(input);
+	return Object.keys(list.reduce(orderedSetReducer, {}))
+}
+
+/**
+ * Uses `list.indexOf` to implement something like `Array.prototype.includes`,
+ * which we can not rely on being available.
+ *
+ * @param {any[]} list
+ * @returns {function(any): boolean}
+ */
+function arrayIncludes (list) {
+	return function(element) {
+		return list && list.indexOf(element) !== -1;
+	}
+}
+
 function copy(src,dest){
 	for(var p in src){
 		dest[p] = src[p];
 	}
 }
+
 /**
 ^\w+\.prototype\.([_\w]+)\s*=\s*((?:.*\{\s*?[\r\n][\s\S]*?^})|\S.*?(?=[;\r\n]));?
 ^\w+\.prototype\.([_\w]+)\s*=\s*(\S.*?(?=[;\r\n]));?
@@ -2008,12 +2012,12 @@ function _extends(Class,Super){
 	}
 	if(pt.constructor != Class){
 		if(typeof Class != 'function'){
-			console.error("unknow Class:"+Class)
+			console.error("unknown Class:"+Class)
 		}
 		pt.constructor = Class
 	}
 }
-var htmlns = 'http://www.w3.org/1999/xhtml' ;
+
 // Node Types
 var NodeType = {}
 var ELEMENT_NODE                = NodeType.ELEMENT_NODE                = 1;
@@ -2070,6 +2074,7 @@ function DOMException(code, message) {
 };
 DOMException.prototype = Error.prototype;
 copy(ExceptionCode,DOMException)
+
 /**
  * @see http://www.w3.org/TR/2000/REC-DOM-Level-2-Core-20001113/core.html#ID-536297177
  * The NodeList interface provides the abstraction of an ordered collection of nodes, without defining or constraining how this collection is implemented. NodeList objects in the DOM are live.
@@ -2101,6 +2106,7 @@ NodeList.prototype = {
 		return buf.join('');
 	}
 };
+
 function LiveNodeList(node,refresh){
 	this._node = node;
 	this._refresh = refresh
@@ -2122,9 +2128,15 @@ LiveNodeList.prototype.item = function(i){
 }
 
 _extends(LiveNodeList,NodeList);
+
 /**
- * 
- * Objects implementing the NamedNodeMap interface are used to represent collections of nodes that can be accessed by name. Note that NamedNodeMap does not inherit from NodeList; NamedNodeMaps are not maintained in any particular order. Objects contained in an object implementing NamedNodeMap may also be accessed by an ordinal index, but this is simply to allow convenient enumeration of the contents of a NamedNodeMap, and does not imply that the DOM specifies an order to these Nodes.
+ * Objects implementing the NamedNodeMap interface are used
+ * to represent collections of nodes that can be accessed by name.
+ * Note that NamedNodeMap does not inherit from NodeList;
+ * NamedNodeMaps are not maintained in any particular order.
+ * Objects contained in an object implementing NamedNodeMap may also be accessed by an ordinal index,
+ * but this is simply to allow convenient enumeration of the contents of a NamedNodeMap,
+ * and does not imply that the DOM specifies an order to these Nodes.
  * NamedNodeMap objects in the DOM are live.
  * used for attributes or DocumentType entities 
  */
@@ -2236,55 +2248,108 @@ NamedNodeMap.prototype = {
 		return null;
 	}
 };
+
 /**
- * @see http://www.w3.org/TR/REC-DOM-Level-1/level-one-core.html#ID-102161490
+ * The DOMImplementation interface represents an object providing methods
+ * which are not dependent on any particular document.
+ * Such an object is returned by the `Document.implementation` property.
+ *
+ * __The individual methods describe the differences compared to the specs.__
+ *
+ * @constructor
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMImplementation MDN
+ * @see https://www.w3.org/TR/REC-DOM-Level-1/level-one-core.html#ID-102161490 DOM Level 1 Core (Initial)
+ * @see https://www.w3.org/TR/DOM-Level-2-Core/core.html#ID-102161490 DOM Level 2 Core
+ * @see https://www.w3.org/TR/DOM-Level-3-Core/core.html#ID-102161490 DOM Level 3 Core
+ * @see https://dom.spec.whatwg.org/#domimplementation DOM Living Standard
  */
-function DOMImplementation(/* Object */ features) {
-	this._features = {};
-	if (features) {
-		for (var feature in features) {
-			 this._features = features[feature];
-		}
-	}
-};
+function DOMImplementation() {
+}
 
 DOMImplementation.prototype = {
-	hasFeature: function(/* string */ feature, /* string */ version) {
-		var versions = this._features[feature.toLowerCase()];
-		if (versions && (!version || version in versions)) {
+	/**
+	 * The DOMImplementation.hasFeature() method returns a Boolean flag indicating if a given feature is supported.
+	 * The different implementations fairly diverged in what kind of features were reported.
+	 * The latest version of the spec settled to force this method to always return true, where the functionality was accurate and in use.
+	 *
+	 * @deprecated It is deprecated and modern browsers return true in all cases.
+	 *
+	 * @param {string} feature
+	 * @param {string} [version]
+	 * @returns {boolean} always true
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMImplementation/hasFeature MDN
+	 * @see https://www.w3.org/TR/REC-DOM-Level-1/level-one-core.html#ID-5CED94D7 DOM Level 1 Core
+	 * @see https://dom.spec.whatwg.org/#dom-domimplementation-hasfeature DOM Living Standard
+	 */
+	hasFeature: function(feature, version) {
 			return true;
-		} else {
-			return false;
-		}
 	},
-	// Introduced in DOM Level 2:
-	createDocument:function(namespaceURI,  qualifiedName, doctype){// raises:INVALID_CHARACTER_ERR,NAMESPACE_ERR,WRONG_DOCUMENT_ERR
+	/**
+	 * Creates an XML Document object of the specified type with its document element.
+	 *
+	 * __It behaves slightly different from the description in the living standard__:
+	 * - There is no interface/class `XMLDocument`, it returns a `Document` instance.
+	 * - `contentType`, `encoding`, `mode`, `origin`, `url` fields are currently not declared.
+	 * - this implementation is not validating names or qualified names
+	 *   (when parsing XML strings, the SAX parser takes care of that)
+	 *
+	 * @param {string|null} namespaceURI
+	 * @param {string} qualifiedName
+	 * @param {DocumentType=null} doctype
+	 * @returns {Document}
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMImplementation/createDocument MDN
+	 * @see https://www.w3.org/TR/DOM-Level-2-Core/core.html#Level-2-Core-DOM-createDocument DOM Level 2 Core (initial)
+	 * @see https://dom.spec.whatwg.org/#dom-domimplementation-createdocument  DOM Level 2 Core
+	 *
+	 * @see https://dom.spec.whatwg.org/#validate-and-extract DOM: Validate and extract
+	 * @see https://www.w3.org/TR/xml/#NT-NameStartChar XML Spec: Names
+	 * @see https://www.w3.org/TR/xml-names/#ns-qualnames XML Namespaces: Qualified names
+	 */
+	createDocument: function(namespaceURI,  qualifiedName, doctype){
 		var doc = new Document();
 		doc.implementation = this;
 		doc.childNodes = new NodeList();
-		doc.doctype = doctype;
-		if(doctype){
+		doc.doctype = doctype || null;
+		if (doctype){
 			doc.appendChild(doctype);
 		}
-		if(qualifiedName){
-			var root = doc.createElementNS(namespaceURI,qualifiedName);
+		if (qualifiedName){
+			var root = doc.createElementNS(namespaceURI, qualifiedName);
 			doc.appendChild(root);
 		}
 		return doc;
 	},
-	// Introduced in DOM Level 2:
-	createDocumentType:function(qualifiedName, publicId, systemId){// raises:INVALID_CHARACTER_ERR,NAMESPACE_ERR
+	/**
+	 * Returns a doctype, with the given `qualifiedName`, `publicId`, and `systemId`.
+	 *
+	 * __This behavior is slightly different from the in the specs__:
+	 * - this implementation is not validating names or qualified names
+	 *   (when parsing XML strings, the SAX parser takes care of that)
+	 *
+	 * @param {string} qualifiedName
+	 * @param {string} [publicId]
+	 * @param {string} [systemId]
+	 * @returns {DocumentType} which can either be used with `DOMImplementation.createDocument` upon document creation
+	 * 				  or can be put into the document via methods like `Node.insertBefore()` or `Node.replaceChild()`
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMImplementation/createDocumentType MDN
+	 * @see https://www.w3.org/TR/DOM-Level-2-Core/core.html#Level-2-Core-DOM-createDocType DOM Level 2 Core
+	 * @see https://dom.spec.whatwg.org/#dom-domimplementation-createdocumenttype DOM Living Standard
+	 *
+	 * @see https://dom.spec.whatwg.org/#validate-and-extract DOM: Validate and extract
+	 * @see https://www.w3.org/TR/xml/#NT-NameStartChar XML Spec: Names
+	 * @see https://www.w3.org/TR/xml-names/#ns-qualnames XML Namespaces: Qualified names
+	 */
+	createDocumentType: function(qualifiedName, publicId, systemId){
 		var node = new DocumentType();
 		node.name = qualifiedName;
 		node.nodeName = qualifiedName;
-		node.publicId = publicId;
-		node.systemId = systemId;
-		// Introduced in DOM Level 2:
-		//readonly attribute DOMString        internalSubset;
-		
-		//TODO:..
-		//  readonly attribute NamedNodeMap     entities;
-		//  readonly attribute NamedNodeMap     notations;
+		node.publicId = publicId || '';
+		node.systemId = systemId || '';
+
 		return node;
 	}
 };
@@ -2354,6 +2419,20 @@ Node.prototype = {
     hasAttributes:function(){
     	return this.attributes.length>0;
     },
+	/**
+	 * Look up the prefix associated to the given namespace URI, starting from this node.
+	 * **The default namespace declarations are ignored by this method.**
+	 * See Namespace Prefix Lookup for details on the algorithm used by this method.
+	 *
+	 * _Note: The implementation seems to be incomplete when compared to the algorithm described in the specs._
+	 *
+	 * @param {string | null} namespaceURI
+	 * @returns {string | null}
+	 * @see https://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-lookupNamespacePrefix
+	 * @see https://www.w3.org/TR/DOM-Level-3-Core/namespaces-algorithms.html#lookupNamespacePrefixAlgo
+	 * @see https://dom.spec.whatwg.org/#dom-node-lookupprefix
+	 * @see https://github.com/xmldom/xmldom/issues/322
+	 */
     lookupPrefix:function(namespaceURI){
     	var el = this;
     	while(el){
@@ -2424,64 +2503,86 @@ function _visitNode(node,callback){
 
 function Document(){
 }
+
 function _onAddAttribute(doc,el,newAttr){
 	doc && doc._inc++;
 	var ns = newAttr.namespaceURI ;
-	if(ns == 'http://www.w3.org/2000/xmlns/'){
+	if(ns === NAMESPACE.XMLNS){
 		//update namespace
 		el._nsMap[newAttr.prefix?newAttr.localName:''] = newAttr.value
 	}
 }
+
 function _onRemoveAttribute(doc,el,newAttr,remove){
 	doc && doc._inc++;
 	var ns = newAttr.namespaceURI ;
-	if(ns == 'http://www.w3.org/2000/xmlns/'){
+	if(ns === NAMESPACE.XMLNS){
 		//update namespace
 		delete el._nsMap[newAttr.prefix?newAttr.localName:'']
 	}
 }
-function _onUpdateChild(doc,el,newChild){
+
+/**
+ * Updates `el.childNodes`, updating the indexed items and it's `length`.
+ * Passing `newChild` means it will be appended.
+ * Otherwise it's assumed that an item has been removed,
+ * and `el.firstNode` and it's `.nextSibling` are used
+ * to walk the current list of child nodes.
+ *
+ * @param {Document} doc
+ * @param {Node} el
+ * @param {Node} [newChild]
+ * @private
+ */
+function _onUpdateChild (doc, el, newChild) {
 	if(doc && doc._inc){
 		doc._inc++;
 		//update childNodes
 		var cs = el.childNodes;
-		if(newChild){
+		if (newChild) {
 			cs[cs.length++] = newChild;
-		}else{
-			//console.log(1)
+		} else {
 			var child = el.firstChild;
 			var i = 0;
-			while(child){
+			while (child) {
 				cs[i++] = child;
-				child =child.nextSibling;
+				child = child.nextSibling;
 			}
 			cs.length = i;
+			delete cs[cs.length];
 		}
 	}
 }
 
 /**
- * attributes;
- * children;
- * 
- * writeable properties:
- * nodeValue,Attr:value,CharacterData:data
- * prefix
+ * Removes the connections between `parentNode` and `child`
+ * and any existing `child.previousSibling` or `child.nextSibling`.
+ *
+ * @see https://github.com/xmldom/xmldom/issues/135
+ * @see https://github.com/xmldom/xmldom/issues/145
+ *
+ * @param {Node} parentNode
+ * @param {Node} child
+ * @returns {Node} the child that was removed.
+ * @private
  */
-function _removeChild(parentNode,child){
+function _removeChild (parentNode, child) {
 	var previous = child.previousSibling;
 	var next = child.nextSibling;
-	if(previous){
+	if (previous) {
 		previous.nextSibling = next;
-	}else{
-		parentNode.firstChild = next
+	} else {
+		parentNode.firstChild = next;
 	}
-	if(next){
+	if (next) {
 		next.previousSibling = previous;
-	}else{
+	} else {
 		parentNode.lastChild = previous;
 	}
-	_onUpdateChild(parentNode.ownerDocument,parentNode);
+	child.parentNode = null;
+	child.previousSibling = null;
+	child.nextSibling = null;
+	_onUpdateChild(parentNode.ownerDocument, parentNode);
 	return child;
 }
 /**
@@ -2527,36 +2628,50 @@ function _insertBefore(parentNode,newChild,nextChild){
 	}
 	return newChild;
 }
-function _appendSingleChild(parentNode,newChild){
-	var cp = newChild.parentNode;
-	if(cp){
-		var pre = parentNode.lastChild;
-		cp.removeChild(newChild);//remove and update
-		var pre = parentNode.lastChild;
+
+/**
+ * Appends `newChild` to `parentNode`.
+ * If `newChild` is already connected to a `parentNode` it is first removed from it.
+ *
+ * @see https://github.com/xmldom/xmldom/issues/135
+ * @see https://github.com/xmldom/xmldom/issues/145
+ * @param {Node} parentNode
+ * @param {Node} newChild
+ * @returns {Node}
+ * @private
+ */
+function _appendSingleChild (parentNode, newChild) {
+	if (newChild.parentNode) {
+		newChild.parentNode.removeChild(newChild);
 	}
-	var pre = parentNode.lastChild;
 	newChild.parentNode = parentNode;
-	newChild.previousSibling = pre;
+	newChild.previousSibling = parentNode.lastChild;
 	newChild.nextSibling = null;
-	if(pre){
-		pre.nextSibling = newChild;
-	}else{
+	if (newChild.previousSibling) {
+		newChild.previousSibling.nextSibling = newChild;
+	} else {
 		parentNode.firstChild = newChild;
 	}
 	parentNode.lastChild = newChild;
-	_onUpdateChild(parentNode.ownerDocument,parentNode,newChild);
+	_onUpdateChild(parentNode.ownerDocument, parentNode, newChild);
 	return newChild;
-	//console.log("__aa",parentNode.lastChild.nextSibling == null)
 }
+
 Document.prototype = {
 	//implementation : null,
 	nodeName :  '#document',
 	nodeType :  DOCUMENT_NODE,
+	/**
+	 * The DocumentType node of the document.
+	 *
+	 * @readonly
+	 * @type DocumentType
+	 */
 	doctype :  null,
 	documentElement :  null,
 	_inc : 1,
-	
-	insertBefore :  function(newChild, refChild){//raises 
+
+	insertBefore :  function(newChild, refChild){//raises
 		if(newChild.nodeType == DOCUMENT_FRAGMENT_NODE){
 			var child = newChild.firstChild;
 			while(child){
@@ -2569,7 +2684,7 @@ Document.prototype = {
 		if(this.documentElement == null && newChild.nodeType == ELEMENT_NODE){
 			this.documentElement = newChild;
 		}
-		
+
 		return _insertBefore(this,newChild,refChild),(newChild.ownerDocument = this),newChild;
 	},
 	removeChild :  function(oldChild){
@@ -2595,28 +2710,58 @@ Document.prototype = {
 		})
 		return rtv;
 	},
-	
-	getElementsByClassName: function(className) {
-		var pattern = new RegExp("(^|\\s)" + className + "(\\s|$)");
+
+	/**
+	 * The `getElementsByClassName` method of `Document` interface returns an array-like object
+	 * of all child elements which have **all** of the given class name(s).
+	 *
+	 * Returns an empty list if `classeNames` is an empty string or only contains HTML white space characters.
+	 *
+	 *
+	 * Warning: This is a live LiveNodeList.
+	 * Changes in the DOM will reflect in the array as the changes occur.
+	 * If an element selected by this array no longer qualifies for the selector,
+	 * it will automatically be removed. Be aware of this for iteration purposes.
+	 *
+	 * @param {string} classNames is a string representing the class name(s) to match; multiple class names are separated by (ASCII-)whitespace
+	 *
+	 * @see https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementsByClassName
+	 * @see https://dom.spec.whatwg.org/#concept-getelementsbyclassname
+	 */
+	getElementsByClassName: function(classNames) {
+		var classNamesSet = toOrderedSet(classNames)
 		return new LiveNodeList(this, function(base) {
 			var ls = [];
-			_visitNode(base.documentElement, function(node) {
-				if(node !== base && node.nodeType == ELEMENT_NODE) {
-					if(pattern.test(node.getAttribute('class'))) {
-						ls.push(node);
+			if (classNamesSet.length > 0) {
+				_visitNode(base.documentElement, function(node) {
+					if(node !== base && node.nodeType === ELEMENT_NODE) {
+						var nodeClassNames = node.getAttribute('class')
+						// can be null if the attribute does not exist
+						if (nodeClassNames) {
+							// before splitting and iterating just compare them for the most common case
+							var matches = classNames === nodeClassNames;
+							if (!matches) {
+								var nodeClassNamesSet = toOrderedSet(nodeClassNames)
+								matches = classNamesSet.every(arrayIncludes(nodeClassNamesSet))
+							}
+							if(matches) {
+								ls.push(node);
+							}
+						}
 					}
-				}
-			});
+				});
+			}
 			return ls;
 		});
 	},
-	
+
 	//document factory method:
 	createElement :	function(tagName){
 		var node = new Element();
 		node.ownerDocument = this;
 		node.nodeName = tagName;
 		node.tagName = tagName;
+		node.localName = tagName;
 		node.childNodes = new NodeList();
 		var attrs	= node.attributes = new NamedNodeMap();
 		attrs._ownerElement = node;
@@ -2934,36 +3079,55 @@ function nodeSerializeToString(isHtml,nodeFilter){
 	//console.log('###',this.nodeType,uri,prefix,buf.join(''))
 	return buf.join('');
 }
-function needNamespaceDefine(node,isHTML, visibleNamespaces) {
-	var prefix = node.prefix||'';
+
+function needNamespaceDefine(node, isHTML, visibleNamespaces) {
+	var prefix = node.prefix || '';
 	var uri = node.namespaceURI;
-	if (!prefix && !uri){
+	// According to [Namespaces in XML 1.0](https://www.w3.org/TR/REC-xml-names/#ns-using) ,
+	// and more specifically https://www.w3.org/TR/REC-xml-names/#nsc-NoPrefixUndecl :
+	// > In a namespace declaration for a prefix [...], the attribute value MUST NOT be empty.
+	// in a similar manner [Namespaces in XML 1.1](https://www.w3.org/TR/xml-names11/#ns-using)
+	// and more specifically https://www.w3.org/TR/xml-names11/#nsc-NSDeclared :
+	// > [...] Furthermore, the attribute value [...] must not be an empty string.
+	// so serializing empty namespace value like xmlns:ds="" would produce an invalid XML document.
+	if (!uri) {
 		return false;
 	}
-	if (prefix === "xml" && uri === "http://www.w3.org/XML/1998/namespace" 
-		|| uri == 'http://www.w3.org/2000/xmlns/'){
+	if (prefix === "xml" && uri === NAMESPACE.XML || uri === NAMESPACE.XMLNS) {
 		return false;
 	}
 	
 	var i = visibleNamespaces.length 
-	//console.log('@@@@',node.tagName,prefix,uri,visibleNamespaces)
 	while (i--) {
 		var ns = visibleNamespaces[i];
 		// get namespace prefix
-		//console.log(node.nodeType,node.tagName,ns.prefix,prefix)
-		if (ns.prefix == prefix){
-			return ns.namespace != uri;
+		if (ns.prefix === prefix) {
+			return ns.namespace !== uri;
 		}
 	}
-	//console.log(isHTML,uri,prefix=='')
-	//if(isHTML && prefix ==null && uri == 'http://www.w3.org/1999/xhtml'){
-	//	return false;
-	//}
-	//node.flag = '11111'
-	//console.error(3,true,node.flag,node.prefix,node.namespaceURI)
 	return true;
 }
+/**
+ * Well-formed constraint: No < in Attribute Values
+ * > The replacement text of any entity referred to directly or indirectly
+ * > in an attribute value must not contain a <.
+ * @see https://www.w3.org/TR/xml11/#CleanAttrVals
+ * @see https://www.w3.org/TR/xml11/#NT-AttValue
+ *
+ * Literal whitespace other than space that appear in attribute values
+ * are serialized as their entity references, so they will be preserved.
+ * (In contrast to whitespace literals in the input which are normalized to spaces)
+ * @see https://www.w3.org/TR/xml11/#AVNormalize
+ */
+function addSerializedAttribute(buf, qualifiedName, value) {
+	buf.push(' ', qualifiedName, '="', value.replace(/[<&"\t\n\r]/g, _xmlEncoder), '"')
+}
+
 function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
+	if (!visibleNamespaces) {
+		visibleNamespaces = [];
+	}
+
 	if(nodeFilter){
 		node = nodeFilter(node);
 		if(node){
@@ -2976,20 +3140,51 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 		}
 		//buf.sort.apply(attrs, attributeSorter);
 	}
+
 	switch(node.nodeType){
 	case ELEMENT_NODE:
-		if (!visibleNamespaces) visibleNamespaces = [];
-		var startVisibleNamespaces = visibleNamespaces.length;
 		var attrs = node.attributes;
 		var len = attrs.length;
 		var child = node.firstChild;
 		var nodeName = node.tagName;
 		
-		isHTML =  (htmlns === node.namespaceURI) ||isHTML 
-		buf.push('<',nodeName);
-		
-		
-		
+		isHTML = NAMESPACE.isHTML(node.namespaceURI) || isHTML
+
+		var prefixedNodeName = nodeName
+		if (!isHTML && !node.prefix && node.namespaceURI) {
+			var defaultNS
+			// lookup current default ns from `xmlns` attribute
+			for (var ai = 0; ai < attrs.length; ai++) {
+				if (attrs.item(ai).name === 'xmlns') {
+					defaultNS = attrs.item(ai).value
+					break
+				}
+			}
+			if (!defaultNS) {
+				// lookup current default ns in visibleNamespaces
+				for (var nsi = visibleNamespaces.length - 1; nsi >= 0; nsi--) {
+					var namespace = visibleNamespaces[nsi]
+					if (namespace.prefix === '' && namespace.namespace === node.namespaceURI) {
+						defaultNS = namespace.namespace
+						break
+					}
+				}
+			}
+			if (defaultNS !== node.namespaceURI) {
+				for (var nsi = visibleNamespaces.length - 1; nsi >= 0; nsi--) {
+					var namespace = visibleNamespaces[nsi]
+					if (namespace.namespace === node.namespaceURI) {
+						if (namespace.prefix) {
+							prefixedNodeName = namespace.prefix + ':' + nodeName
+						}
+						break
+					}
+				}
+			}
+		}
+
+		buf.push('<', prefixedNodeName);
+
 		for(var i=0;i<len;i++){
 			// add namespaces for attributes
 			var attr = attrs.item(i);
@@ -2999,28 +3194,24 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 				visibleNamespaces.push({ prefix: '', namespace: attr.value });
 			}
 		}
+
 		for(var i=0;i<len;i++){
 			var attr = attrs.item(i);
 			if (needNamespaceDefine(attr,isHTML, visibleNamespaces)) {
 				var prefix = attr.prefix||'';
 				var uri = attr.namespaceURI;
-				var ns = prefix ? ' xmlns:' + prefix : " xmlns";
-				buf.push(ns, '="' , uri , '"');
+				addSerializedAttribute(buf, prefix ? 'xmlns:' + prefix : "xmlns", uri);
 				visibleNamespaces.push({ prefix: prefix, namespace:uri });
 			}
 			serializeToString(attr,buf,isHTML,nodeFilter,visibleNamespaces);
 		}
+
 		// add namespace for current node		
-		if (needNamespaceDefine(node,isHTML, visibleNamespaces)) {
+		if (nodeName === prefixedNodeName && needNamespaceDefine(node, isHTML, visibleNamespaces)) {
 			var prefix = node.prefix||'';
 			var uri = node.namespaceURI;
-			if (uri) {
-				// Avoid empty namespace value like xmlns:ds=""
-				// Empty namespace URL will we produce an invalid XML document
-				var ns = prefix ? ' xmlns:' + prefix : " xmlns";
-				buf.push(ns, '="' , uri , '"');
-				visibleNamespaces.push({ prefix: prefix, namespace:uri });
-			}
+			addSerializedAttribute(buf, prefix ? 'xmlns:' + prefix : "xmlns", uri);
+			visibleNamespaces.push({ prefix: prefix, namespace:uri });
 		}
 		
 		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
@@ -3031,18 +3222,18 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 					if(child.data){
 						buf.push(child.data);
 					}else{
-						serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
+						serializeToString(child, buf, isHTML, nodeFilter, visibleNamespaces.slice());
 					}
 					child = child.nextSibling;
 				}
 			}else
 			{
 				while(child){
-					serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
+					serializeToString(child, buf, isHTML, nodeFilter, visibleNamespaces.slice());
 					child = child.nextSibling;
 				}
 			}
-			buf.push('</',nodeName,'>');
+			buf.push('</',prefixedNodeName,'>');
 		}else{
 			buf.push('/>');
 		}
@@ -3053,18 +3244,12 @@ function serializeToString(node,buf,isHTML,nodeFilter,visibleNamespaces){
 	case DOCUMENT_FRAGMENT_NODE:
 		var child = node.firstChild;
 		while(child){
-			serializeToString(child,buf,isHTML,nodeFilter,visibleNamespaces);
+			serializeToString(child, buf, isHTML, nodeFilter, visibleNamespaces.slice());
 			child = child.nextSibling;
 		}
 		return;
 	case ATTRIBUTE_NODE:
-		/**
-		 * Well-formedness constraint: No < in Attribute Values
-		 * The replacement text of any entity referred to directly or indirectly in an attribute value must not contain a <.
-		 * @see https://www.w3.org/TR/xml/#CleanAttrVals
-		 * @see https://www.w3.org/TR/xml/#NT-AttValue
-		 */
-		return buf.push(' ', node.name, '="', node.value.replace(/[<&"]/g,_xmlEncoder), '"');
+		return addSerializedAttribute(buf, node.name, node.value);
 	case TEXT_NODE:
 		/**
 		 * The ampersand character (&) and the left angle bracket (<) must not appear in their literal form,
@@ -3216,10 +3401,12 @@ try{
 				return this.$$length;
 			}
 		});
+
 		Object.defineProperty(Node.prototype,'textContent',{
 			get:function(){
 				return getTextContent(this);
 			},
+
 			set:function(data){
 				switch(this.nodeType){
 				case ELEMENT_NODE:
@@ -3231,8 +3418,8 @@ try{
 						this.appendChild(this.ownerDocument.createTextNode(data));
 					}
 					break;
+
 				default:
-					//TODO:
 					this.data = data;
 					this.value = data;
 					this.nodeValue = data;
@@ -3257,6 +3444,7 @@ try{
 				return node.nodeValue;
 			}
 		}
+
 		__set__ = function(object,key,value){
 			//console.log(value)
 			object['$$'+key] = value
@@ -3266,19 +3454,46 @@ try{
 }
 
 //if(typeof require == 'function'){
-	__webpack_unused_export__ = Node;
-	__webpack_unused_export__ = DOMException;
+	exports.DocumentType = DocumentType;
+	exports.DOMException = DOMException;
 	exports.DOMImplementation = DOMImplementation;
+	exports.Element = Element;
+	exports.Node = Node;
+	exports.NodeList = NodeList;
 	exports.XMLSerializer = XMLSerializer;
 //}
 
 
 /***/ }),
 
-/***/ 507:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 508:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
-exports.entityMap = {
+var freeze = (__nccwpck_require__(756).freeze);
+
+/**
+ * The entities that are predefined in every XML document.
+ *
+ * @see https://www.w3.org/TR/2006/REC-xml11-20060816/#sec-predefined-ent W3C XML 1.1
+ * @see https://www.w3.org/TR/2008/REC-xml-20081126/#sec-predefined-ent W3C XML 1.0
+ * @see https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references#Predefined_entities_in_XML Wikipedia
+ */
+exports.XML_ENTITIES = freeze({amp:'&', apos:"'", gt:'>', lt:'<', quot:'"'})
+
+/**
+ * A map of currently 241 entities that are detected in an HTML document.
+ * They contain all entries from `XML_ENTITIES`.
+ *
+ * @see XML_ENTITIES
+ * @see DOMParser.parseFromString
+ * @see DOMImplementation.prototype.createHTMLDocument
+ * @see https://html.spec.whatwg.org/#named-character-references WHATWG HTML(5) Spec
+ * @see https://www.w3.org/TR/xml-entity-names/ W3C XML Entity Names
+ * @see https://www.w3.org/TR/html4/sgml/entities.html W3C HTML4/SGML
+ * @see https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references#Character_entity_references_in_HTML Wikipedia (HTML)
+ * @see https://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references#Entities_representing_special_characters_in_XHTML Wikpedia (XHTML)
+ */
+exports.HTML_ENTITIES = freeze({
        lt: '<',
        gt: '>',
        amp: '&',
@@ -3520,13 +3735,32 @@ exports.entityMap = {
        clubs: "♣",
        hearts: "♥",
        diams: "♦"
-};
+});
+
+/**
+ * @deprecated use `HTML_ENTITIES` instead
+ * @see HTML_ENTITIES
+ */
+exports.entityMap = exports.HTML_ENTITIES
 
 
 /***/ }),
 
-/***/ 124:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 213:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+var dom = __nccwpck_require__(389)
+exports.DOMImplementation = dom.DOMImplementation
+exports.XMLSerializer = dom.XMLSerializer
+exports.DOMParser = __nccwpck_require__(72).DOMParser
+
+
+/***/ }),
+
+/***/ 58:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+var NAMESPACE = (__nccwpck_require__(756).NAMESPACE);
 
 //[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
@@ -3645,7 +3879,7 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 			switch(source.charAt(tagStart+1)){
 			case '/':
 				var end = source.indexOf('>',tagStart+3);
-				var tagName = source.substring(tagStart+2,end);
+				var tagName = source.substring(tagStart + 2, end).replace(/[ \t\n\r]+$/g, '');
 				var config = parseStack.pop();
 				if(end<0){
 					
@@ -3718,12 +3952,10 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 						parseStack.push(el)
 					}
 				}
-				
-				
-				
-				if(el.uri === 'http://www.w3.org/1999/xhtml' && !el.closed){
+
+				if (NAMESPACE.isHTML(el.uri) && !el.closed) {
 					end = parseHtmlSpecialContent(source,end,el.tagName,entityReplacer,domBuilder)
-				}else{
+				} else {
 					end++;
 				}
 			}
@@ -3760,8 +3992,18 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 	 * @param {number} startIndex
 	 */
 	function addAttribute(qname, value, startIndex) {
-		if (qname in el.attributeNames) errorHandler.fatalError('Attribute ' + qname + ' redefined')
-		el.addValue(qname, value, startIndex)
+		if (el.attributeNames.hasOwnProperty(qname)) {
+			errorHandler.fatalError('Attribute ' + qname + ' redefined')
+		}
+		el.addValue(
+			qname,
+			// @see https://www.w3.org/TR/xml/#AVNormalize
+			// since the xmldom sax parser does not "interpret" DTD the following is not implemented:
+			// - recursive replacement of (DTD) entity references
+			// - trimming and collapsing multiple spaces into a single one for attributes that are not of type CDATA
+			value.replace(/[\t\n\r]/g, ' ').replace(/&#?\w+;/g, entityReplacer),
+			startIndex
+		)
 	}
 	var attrName;
 	var value;
@@ -3792,7 +4034,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				start = p+1;
 				p = source.indexOf(c,start)
 				if(p>0){
-					value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
+					value = source.slice(start, p);
 					addAttribute(attrName, value, start-1);
 					s = S_ATTR_END;
 				}else{
@@ -3800,10 +4042,8 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 					throw new Error('attribute value no end \''+c+'\' match');
 				}
 			}else if(s == S_ATTR_NOQUOT_VALUE){
-				value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
-				//console.log(attrName,value,start,p)
+				value = source.slice(start, p);
 				addAttribute(attrName, value, start);
-				//console.dir(el)
 				errorHandler.warning('attribute "'+attrName+'" missed start quot('+c+')!!');
 				start = p+1;
 				s = S_ATTR_END
@@ -3857,9 +4097,9 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				}
 				if(s == S_ATTR_NOQUOT_VALUE){
 					errorHandler.warning('attribute "'+value+'" missed quot(")!');
-					addAttribute(attrName, value.replace(/&#?\w+;/g,entityReplacer), start)
+					addAttribute(attrName, value, start)
 				}else{
-					if(currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !value.match(/^(?:disabled|checked|selected)$/i)){
+					if(!NAMESPACE.isHTML(currentNSMap['']) || !value.match(/^(?:disabled|checked|selected)$/i)){
 						errorHandler.warning('attribute "'+value+'" missed value!! "'+value+'" instead!!')
 					}
 					addAttribute(value, value, start)
@@ -3885,7 +4125,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 					s = S_ATTR_SPACE;
 					break;
 				case S_ATTR_NOQUOT_VALUE:
-					var value = source.slice(start,p).replace(/&#?\w+;/g,entityReplacer);
+					var value = source.slice(start, p);
 					errorHandler.warning('attribute "'+value+'" missed quot(")!!');
 					addAttribute(attrName, value, start)
 				case S_ATTR_END:
@@ -3907,7 +4147,7 @@ function parseElementStartPart(source,start,el,currentNSMap,entityReplacer,error
 				//case S_ATTR_NOQUOT_VALUE:void();break;
 				case S_ATTR_SPACE:
 					var tagName =  el.tagName;
-					if(currentNSMap[''] !== 'http://www.w3.org/1999/xhtml' || !attrName.match(/^(?:disabled|checked|selected)$/i)){
+					if (!NAMESPACE.isHTML(currentNSMap['']) || !attrName.match(/^(?:disabled|checked|selected)$/i)) {
 						errorHandler.warning('attribute "'+attrName+'" missed value!! "'+attrName+'" instead2!!')
 					}
 					addAttribute(attrName, attrName, start);
@@ -3966,7 +4206,7 @@ function appendElement(el,domBuilder,currentNSMap){
 				//console.log(currentNSMap,1)
 			}
 			currentNSMap[nsPrefix] = localNSMap[nsPrefix] = value;
-			a.uri = 'http://www.w3.org/2000/xmlns/'
+			a.uri = NAMESPACE.XMLNS
 			domBuilder.startPrefixMapping(nsPrefix, value) 
 		}
 	}
@@ -3976,7 +4216,7 @@ function appendElement(el,domBuilder,currentNSMap){
 		var prefix = a.prefix;
 		if(prefix){//no prefix attribute has no namespace
 			if(prefix === 'xml'){
-				a.uri = 'http://www.w3.org/XML/1998/namespace';
+				a.uri = NAMESPACE.XML;
 			}if(prefix !== 'xmlns'){
 				a.uri = currentNSMap[prefix || '']
 				
@@ -4170,6 +4410,286 @@ function split(source,start){
 
 exports.XMLReader = XMLReader;
 exports.ParseError = ParseError;
+
+
+/***/ }),
+
+/***/ 294:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = __nccwpck_require__(219);
+
+
+/***/ }),
+
+/***/ 219:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var net = __nccwpck_require__(808);
+var tls = __nccwpck_require__(404);
+var http = __nccwpck_require__(685);
+var https = __nccwpck_require__(687);
+var events = __nccwpck_require__(361);
+var assert = __nccwpck_require__(491);
+var util = __nccwpck_require__(837);
+
+
+exports.httpOverHttp = httpOverHttp;
+exports.httpsOverHttp = httpsOverHttp;
+exports.httpOverHttps = httpOverHttps;
+exports.httpsOverHttps = httpsOverHttps;
+
+
+function httpOverHttp(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = http.request;
+  return agent;
+}
+
+function httpsOverHttp(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = http.request;
+  agent.createSocket = createSecureSocket;
+  agent.defaultPort = 443;
+  return agent;
+}
+
+function httpOverHttps(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = https.request;
+  return agent;
+}
+
+function httpsOverHttps(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = https.request;
+  agent.createSocket = createSecureSocket;
+  agent.defaultPort = 443;
+  return agent;
+}
+
+
+function TunnelingAgent(options) {
+  var self = this;
+  self.options = options || {};
+  self.proxyOptions = self.options.proxy || {};
+  self.maxSockets = self.options.maxSockets || http.Agent.defaultMaxSockets;
+  self.requests = [];
+  self.sockets = [];
+
+  self.on('free', function onFree(socket, host, port, localAddress) {
+    var options = toOptions(host, port, localAddress);
+    for (var i = 0, len = self.requests.length; i < len; ++i) {
+      var pending = self.requests[i];
+      if (pending.host === options.host && pending.port === options.port) {
+        // Detect the request to connect same origin server,
+        // reuse the connection.
+        self.requests.splice(i, 1);
+        pending.request.onSocket(socket);
+        return;
+      }
+    }
+    socket.destroy();
+    self.removeSocket(socket);
+  });
+}
+util.inherits(TunnelingAgent, events.EventEmitter);
+
+TunnelingAgent.prototype.addRequest = function addRequest(req, host, port, localAddress) {
+  var self = this;
+  var options = mergeOptions({request: req}, self.options, toOptions(host, port, localAddress));
+
+  if (self.sockets.length >= this.maxSockets) {
+    // We are over limit so we'll add it to the queue.
+    self.requests.push(options);
+    return;
+  }
+
+  // If we are under maxSockets create a new one.
+  self.createSocket(options, function(socket) {
+    socket.on('free', onFree);
+    socket.on('close', onCloseOrRemove);
+    socket.on('agentRemove', onCloseOrRemove);
+    req.onSocket(socket);
+
+    function onFree() {
+      self.emit('free', socket, options);
+    }
+
+    function onCloseOrRemove(err) {
+      self.removeSocket(socket);
+      socket.removeListener('free', onFree);
+      socket.removeListener('close', onCloseOrRemove);
+      socket.removeListener('agentRemove', onCloseOrRemove);
+    }
+  });
+};
+
+TunnelingAgent.prototype.createSocket = function createSocket(options, cb) {
+  var self = this;
+  var placeholder = {};
+  self.sockets.push(placeholder);
+
+  var connectOptions = mergeOptions({}, self.proxyOptions, {
+    method: 'CONNECT',
+    path: options.host + ':' + options.port,
+    agent: false,
+    headers: {
+      host: options.host + ':' + options.port
+    }
+  });
+  if (options.localAddress) {
+    connectOptions.localAddress = options.localAddress;
+  }
+  if (connectOptions.proxyAuth) {
+    connectOptions.headers = connectOptions.headers || {};
+    connectOptions.headers['Proxy-Authorization'] = 'Basic ' +
+        new Buffer(connectOptions.proxyAuth).toString('base64');
+  }
+
+  debug('making CONNECT request');
+  var connectReq = self.request(connectOptions);
+  connectReq.useChunkedEncodingByDefault = false; // for v0.6
+  connectReq.once('response', onResponse); // for v0.6
+  connectReq.once('upgrade', onUpgrade);   // for v0.6
+  connectReq.once('connect', onConnect);   // for v0.7 or later
+  connectReq.once('error', onError);
+  connectReq.end();
+
+  function onResponse(res) {
+    // Very hacky. This is necessary to avoid http-parser leaks.
+    res.upgrade = true;
+  }
+
+  function onUpgrade(res, socket, head) {
+    // Hacky.
+    process.nextTick(function() {
+      onConnect(res, socket, head);
+    });
+  }
+
+  function onConnect(res, socket, head) {
+    connectReq.removeAllListeners();
+    socket.removeAllListeners();
+
+    if (res.statusCode !== 200) {
+      debug('tunneling socket could not be established, statusCode=%d',
+        res.statusCode);
+      socket.destroy();
+      var error = new Error('tunneling socket could not be established, ' +
+        'statusCode=' + res.statusCode);
+      error.code = 'ECONNRESET';
+      options.request.emit('error', error);
+      self.removeSocket(placeholder);
+      return;
+    }
+    if (head.length > 0) {
+      debug('got illegal response body from proxy');
+      socket.destroy();
+      var error = new Error('got illegal response body from proxy');
+      error.code = 'ECONNRESET';
+      options.request.emit('error', error);
+      self.removeSocket(placeholder);
+      return;
+    }
+    debug('tunneling connection has established');
+    self.sockets[self.sockets.indexOf(placeholder)] = socket;
+    return cb(socket);
+  }
+
+  function onError(cause) {
+    connectReq.removeAllListeners();
+
+    debug('tunneling socket could not be established, cause=%s\n',
+          cause.message, cause.stack);
+    var error = new Error('tunneling socket could not be established, ' +
+                          'cause=' + cause.message);
+    error.code = 'ECONNRESET';
+    options.request.emit('error', error);
+    self.removeSocket(placeholder);
+  }
+};
+
+TunnelingAgent.prototype.removeSocket = function removeSocket(socket) {
+  var pos = this.sockets.indexOf(socket)
+  if (pos === -1) {
+    return;
+  }
+  this.sockets.splice(pos, 1);
+
+  var pending = this.requests.shift();
+  if (pending) {
+    // If we have pending requests and a socket gets closed a new one
+    // needs to be created to take over in the pool for the one that closed.
+    this.createSocket(pending, function(socket) {
+      pending.request.onSocket(socket);
+    });
+  }
+};
+
+function createSecureSocket(options, cb) {
+  var self = this;
+  TunnelingAgent.prototype.createSocket.call(self, options, function(socket) {
+    var hostHeader = options.request.getHeader('host');
+    var tlsOptions = mergeOptions({}, self.options, {
+      socket: socket,
+      servername: hostHeader ? hostHeader.replace(/:.*$/, '') : options.host
+    });
+
+    // 0 is dummy port for v0.6
+    var secureSocket = tls.connect(0, tlsOptions);
+    self.sockets[self.sockets.indexOf(socket)] = secureSocket;
+    cb(secureSocket);
+  });
+}
+
+
+function toOptions(host, port, localAddress) {
+  if (typeof host === 'string') { // since v0.10
+    return {
+      host: host,
+      port: port,
+      localAddress: localAddress
+    };
+  }
+  return host; // for v0.11 or later
+}
+
+function mergeOptions(target) {
+  for (var i = 1, len = arguments.length; i < len; ++i) {
+    var overrides = arguments[i];
+    if (typeof overrides === 'object') {
+      var keys = Object.keys(overrides);
+      for (var j = 0, keyLen = keys.length; j < keyLen; ++j) {
+        var k = keys[j];
+        if (overrides[k] !== undefined) {
+          target[k] = overrides[k];
+        }
+      }
+    }
+  }
+  return target;
+}
+
+
+var debug;
+if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
+  debug = function() {
+    var args = Array.prototype.slice.call(arguments);
+    if (typeof args[0] === 'string') {
+      args[0] = 'TUNNEL: ' + args[0];
+    } else {
+      args.unshift('TUNNEL:');
+    }
+    console.error.apply(console, args);
+  }
+} else {
+  debug = function() {};
+}
+exports.debug = debug; // for test
 
 
 /***/ }),
