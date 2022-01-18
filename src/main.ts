@@ -8,7 +8,7 @@ async function run(): Promise<void> {
   try {
     const workspace = process.env.GITHUB_WORKSPACE ?? ''
     const project = core.getInput(inputs.project)
-    const projectPath = path.resolve(workspace, project)
+    const projectPath = path.resolve(workspace, workspace ? '..' : '', project)
 
     if (!projectPath) {
       throw new Error('Does not provide exists file path')
