@@ -1,34 +1,34 @@
-# Git tag check action
+# Get version action
 
-This is an action to check if the tag you want to write exists in the remote repository.
+This is an action to get the version string from project file such as package.json, .csproj (c# sdk style project file)
 
 ## Usages
-
-Check if the provided git tag exists.
 
 ```yaml
 steps:
   - uses: actions/checkout@v2
 
-  - uses: bbonkr/git-tag-check-action@latest
-    id: git_tag_check
+  - uses: bbonkr/get-version-action@latest
+    id: get_version
     with:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
-      tag: 'v1.0.0'
+      project: "./package.json"
   - name: logging
     run: |
-      echo "Found tag=${{ steps.git_tag_check.outputs.tag }}"
+      echo "Version=${{ steps.get_version.outputs.version }}"
 ```
 
 ### Inputs
 
 | Name | Required | Description |
 | :--- | :------: | :---------- |
-| tag  | ✅       | Tag you want to check |
-| github_token | ✅ | GitHub Personal Access Token. It requires REPO scope. |
+| project  | ✅       | Your project file path. Support package.json, .csproj (c# sdk style project file) |
+
+> Support file
+> * package.json
+> * .csproj (c# sdk style project file)
 
 ### Outputs
 
 | Name | Description |
 | :--- | :---------- |
-| tag  | If tag is exists, returns tag. Does not exist then empty string. |
+| version  | version string, If does not find version string, throws exception. |
