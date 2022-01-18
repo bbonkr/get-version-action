@@ -11,6 +11,11 @@ async function run(): Promise<void> {
     const project = core.getInput(inputs.project)
     const projectPath = path.resolve(workspace, workspace ? '..' : '', project)
 
+    // eslint-disable-next-line no-console
+    console.info('workspace', workspace)
+
+    // eslint-disable-next-line no-console
+    console.info('projectPath', projectPath)
     if (!projectPath) {
       throw new Error('Does not provide exists file path')
     }
