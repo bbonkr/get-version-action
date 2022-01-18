@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as fs from 'fs/promises'
 import * as path from 'path'
-import xmldom from 'xmldom'
+import xmldom from '@xmldom/xmldom'
 import xpath from 'xpath'
 
 interface GetVersionOptions {
