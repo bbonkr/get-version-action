@@ -6,14 +6,14 @@ import {
 } from '../src/getVersion'
 
 test('package.json file', async () => {
-  const path = '../assets/package.json'
+  const path = './assets/package.json'
   const result = await getVersion({project: path})
 
   expect(result).toEqual('1.0.0')
 })
 
 test('package-no-version.json file', async () => {
-  const path = '../assets/package-no-version.json'
+  const path = './assets/package-no-version.json'
 
   expect(getVersion({project: path})).rejects.toThrow(
     'Does not find the version'
@@ -21,14 +21,14 @@ test('package-no-version.json file', async () => {
 })
 
 test('hello.csproj file', async () => {
-  const path = '../assets/hello.csproj'
+  const path = './assets/hello.csproj'
   const result = await getVersion({project: path})
 
   expect(result).toEqual('1.0.0')
 })
 
 test('hello-no-version.csproj file', async () => {
-  const path = '../assets/hello-no-version.csproj'
+  const path = './assets/hello-no-version.csproj'
 
   expect(getVersion({project: path})).rejects.toThrow(
     'Does not find the version'
@@ -36,7 +36,7 @@ test('hello-no-version.csproj file', async () => {
 })
 
 test('Throws not support file', async () => {
-  const path = '../assets/not-support.project'
+  const path = './assets/not-support.project'
 
   expect(getVersion({project: path})).rejects.toThrow(
     'Does not support your project file'
