@@ -31,7 +31,7 @@ export const getVersion = async (
   const {project} = options
 
   core.debug(`project path: ${project}`)
-  const projectFilePath = path.resolve(__dirname, '..', project)
+  const projectFilePath = path.resolve(project)
   const extname = path.extname(projectFilePath)
   const content = await fs.readFile(projectFilePath, {encoding: 'utf-8'})
 
