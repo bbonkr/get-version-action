@@ -1,0 +1,16 @@
+name: 'get-version-action'
+description: 'Get version string from your project file'
+author: 'bbonkr'
+branding:
+  color: purple 
+  icon: check
+inputs:
+  project: 
+    required: true
+    description: 'Project file path'
+outputs:
+  version:
+    description: 'Found version'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
