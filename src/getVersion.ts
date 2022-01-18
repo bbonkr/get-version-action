@@ -29,9 +29,9 @@ export const getVersion = async (
   options: GetVersionOptions
 ): Promise<string> => {
   const {project} = options
-  const workspace = process.env.GITHUB_WORKSPACE ?? ''
+
   core.debug(`project path: ${project}`)
-  const projectFilePath = path.resolve(workspace, project)
+  const projectFilePath = path.resolve(project)
   const extname = path.extname(projectFilePath)
   const content = await fs.readFile(projectFilePath, {encoding: 'utf-8'})
 
