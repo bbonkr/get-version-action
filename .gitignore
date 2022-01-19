@@ -102,3 +102,6 @@ lib/**/*
 .test/
 
 .env
+
+assets/bin/
+assets/obj/
