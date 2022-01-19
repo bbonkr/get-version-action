@@ -22,10 +22,7 @@ jobs:
           npm install
       - run: |
           npm run all
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          OWNER: ${{ secrets.OWNER }}
-          REPO: ${{ secrets.REPO }} 
+
       - name: get version 
         uses: ./
         id: get_version
@@ -49,6 +46,6 @@ jobs:
       - name: git tag skipped
         if: ${{ steps.check_tag.outputs.tag != '' }}
         run: |
-          echo "Tag (${{ steps.check_tag.outputs.tag }}) is exists already." 
+          echo "Tag (v${{ steps.check_tag.outputs.tag }}) is exists already." 
 
         
