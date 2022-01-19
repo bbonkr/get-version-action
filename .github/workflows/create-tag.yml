@@ -46,6 +46,6 @@ jobs:
       - name: git tag skipped
         if: ${{ steps.check_tag.outputs.tag != '' }}
         run: |
-          echo "Tag (${{ steps.check_tag.outputs.tag }}) is exists already." 
+          echo "Tag (v${{ steps.check_tag.outputs.tag }}) is exists already." 
 
         
