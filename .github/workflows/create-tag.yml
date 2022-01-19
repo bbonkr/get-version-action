@@ -1,0 +1,54 @@
+name: 'create-tag'
+
+on:
+  push:
+    branches:
+      - main 
+    tags:
+      - "!*"
+
+jobs:
+  build: # make sure build/ci work properly
+    runs-on: ubuntu-latest 
+    steps:
+      - uses: actions/checkout@v2
+        
+      - name: Set Node.js 16.x
+        uses: actions/setup-node@v2.5.1
+        with:
+          node-version: 16.x        
+
+      - run: |
+          npm install
+      - run: |
+          npm run all
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          OWNER: ${{ secrets.OWNER }}
+          REPO: ${{ secrets.REPO }} 
+      - name: get version 
+        uses: ./
+        id: get_version
+        with:
+         project: package.json
+      - name: check tag exists
+        uses: bbonkr/git-tag-check-action@v1.0.5
+        id: check_tag
+        with:
+          tag: "v${{ steps.get_version.outputs.version }}"
+          github_token: ${{ secrets.GH_TOKEN }}          
+      - name: package-version-to-git-tag
+        uses: pkgdeps/git-tag-action@v2
+        if: ${{ steps.check_tag.outputs.tag == '' }}
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          github_repo: ${{ github.repository }}
+          version: ${{ steps.get_version.outputs.version }}
+          git_commit_sha: ${{ github.sha }}
+          git_tag_prefix: "v"
+      - name: git tag skipped
+        if: ${{ steps.check_tag.outputs.tag != '' }}
+        run: |
+          echo "Tag (${{ steps.check_tag.outputs.tag }}) is exists already." 
+
+        
