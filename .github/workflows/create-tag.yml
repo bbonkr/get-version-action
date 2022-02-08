@@ -29,7 +29,7 @@ jobs:
         with:
          project: package.json
       - name: check tag exists
-        uses: bbonkr/git-tag-check-action@v1.0.5
+        uses: bbonkr/git-tag-check-action@v1.0.7
         id: check_tag
         with:
           tag: "v${{ steps.get_version.outputs.version }}"

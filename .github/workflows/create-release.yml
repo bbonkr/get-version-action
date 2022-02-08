@@ -18,7 +18,7 @@ jobs:
         with:
           config-name: release-drafter.yml
           version: ${{ github.ref_name }}
-          publish: true 
+          publish: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

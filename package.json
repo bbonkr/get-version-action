@@ -1,6 +1,6 @@
 {
   "name": "get-version-action",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "This is an action to get the version string from project file such as package.json, .csproj (c# sdk style project file)",
   "main": "lib/main.js",
   "scripts": {
@@ -45,7 +45,7 @@
     "@typescript-eslint/parser": "^5.10.0",
     "@vercel/ncc": "^0.33.1",
     "dotenv": "^16.0.0",
-    "eslint": "^8.7.0",
+    "eslint": "^8.8.0",
     "eslint-plugin-github": "^4.3.5",
     "eslint-plugin-jest": "^26.1.0",
     "jest": "^27.4.7",
