@@ -10,7 +10,7 @@ This is an action to get the version string from project file such as package.js
 steps:
   - uses: actions/checkout@v2
 
-  - uses: bbonkr/get-version-action@v1.0.2
+  - uses: bbonkr/get-version-action@v1.0.3
     id: get_version
     with:
       project: "./package.json"
