@@ -11,10 +11,10 @@ jobs:
   build: # make sure build/ci work properly
     runs-on: ubuntu-latest 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         
       - name: Set Node.js 16.x
-        uses: actions/setup-node@v2.5.1
+        uses: actions/setup-node@v3
         with:
           node-version: 16.x        
 
@@ -29,7 +29,7 @@ jobs:
         with:
          project: package.json
       - name: check tag exists
-        uses: bbonkr/git-tag-check-action@v1.0.7
+        uses: bbonkr/git-tag-check-action@v1.0.9
         id: check_tag
         with:
           tag: "v${{ steps.get_version.outputs.version }}"
