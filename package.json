@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@types/node": "^17.0.24",
-    "@typescript-eslint/parser": "^5.19.0",
+    "@typescript-eslint/parser": "^5.22.0",
     "@vercel/ncc": "^0.33.4",
     "dotenv": "^16.0.0",
     "eslint": "^8.13.0",
