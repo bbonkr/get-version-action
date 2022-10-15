@@ -1,6 +1,6 @@
 {
   "name": "get-version-action",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "This is an action to get the version string from project file such as package.json, .csproj (c# sdk style project file)",
   "main": "lib/main.js",
   "scripts": {
@@ -36,22 +36,22 @@
   },
   "homepage": "https://github.com/bbonkr/get-version-action#readme",
   "dependencies": {
-    "@actions/core": "^1.9.1",
+    "@actions/core": "^1.10.0",
     "@xmldom/xmldom": "^0.8.3",
     "xpath": "^0.0.32"
   },
   "devDependencies": {
-    "@types/node": "^17.0.35",
-    "@typescript-eslint/parser": "^5.26.0",
+    "@types/node": "^18.11.0",
+    "@typescript-eslint/parser": "^5.40.0",
     "@vercel/ncc": "^0.34.0",
-    "dotenv": "^16.0.1",
-    "eslint": "^8.16.0",
-    "eslint-plugin-github": "^4.3.6",
-    "eslint-plugin-jest": "^26.2.2",
+    "dotenv": "^16.0.3",
+    "eslint": "^8.25.0",
+    "eslint-plugin-github": "^4.4.0",
+    "eslint-plugin-jest": "^27.1.2",
     "jest": "^27.5.1",
     "js-yaml": "^4.1.0",
-    "prettier": "^2.6.2",
+    "prettier": "^2.7.1",
     "ts-jest": "^27.1.4",
-    "typescript": "^4.7.2"
+    "typescript": "^4.8.4"
   }
 }
