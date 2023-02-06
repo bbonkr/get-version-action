@@ -41,7 +41,7 @@
     "xpath": "^0.0.32"
   },
   "devDependencies": {
-    "@types/node": "^18.11.18",
+    "@types/node": "^18.11.19",
     "@typescript-eslint/parser": "^5.50.0",
     "@vercel/ncc": "^0.34.0",
     "dotenv": "^16.0.3",
