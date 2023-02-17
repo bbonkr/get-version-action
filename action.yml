@@ -11,6 +11,16 @@ inputs:
 outputs:
   version:
     description: 'Found version'
+  major:
+    description: 'Major of SEMVER'
+  minor:
+    description: 'Minor of SEMVER'
+  patch:
+    description: 'Patch of SEMVER'
+  pre-release:
+    description: 'Pre-release of SEMVER'
+  build:
+    description: 'Build of SEMVER'
 runs:
   using: 'node16'
   main: 'dist/index.js'
