@@ -28,21 +28,59 @@ jobs:
         id: get_version
         with:
          project: package.json
+
       - name: check tag exists
         uses: bbonkr/git-tag-check-action@v1.0.12
         id: check_tag
         with:
           tag: "v${{ steps.get_version.outputs.version }}"
           github_token: ${{ secrets.GH_TOKEN }}          
-      - name: package-version-to-git-tag
-        uses: pkgdeps/git-tag-action@v2
+
+      # - name: package-version-to-git-tag
+      #   uses: pkgdeps/git-tag-action@v2
+      #   if: ${{ steps.check_tag.outputs.tag == '' }}
+      #   with:
+      #     github_token: ${{ secrets.GH_TOKEN }}
+      #     github_repo: ${{ github.repository }}
+      #     version: ${{ steps.get_version.outputs.version }}
+      #     git_commit_sha: ${{ github.sha }}
+      #     git_tag_prefix: "v"
+      
+      - name: Create tag current
+        uses: rickstaa/action-create-tag@v1
         if: ${{ steps.check_tag.outputs.tag == '' }}
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          github_repo: ${{ github.repository }}
-          version: ${{ steps.get_version.outputs.version }}
-          git_commit_sha: ${{ github.sha }}
-          git_tag_prefix: "v"
+          tag: "v{{ steps.get_version.outputs.version }}"
+          message: "v{{ steps.get_version.outputs.version }}"
+          commit_sha: ${{ github.sha }}
+
+      - name: Create or update tag major
+        uses: rickstaa/action-create-tag@v1
+        if: ${{ (steps.check_tag.outputs.tag == '') && (steps.get_version.outputs.major != '') }}
+        with:
+          tag: "v{{ steps.get_version.outputs.major }}"
+          message: "v{{ steps.get_version.outputs.major }}"
+          commit_sha: ${{ github.sha }}
+          force_push_tag: true 
+
+      - name: Create or update tag major.minor
+        uses: rickstaa/action-create-tag@v1
+        if: ${{ (steps.check_tag.outputs.tag == '') && (steps.get_version.outputs.major != '') && (steps.get_version.outputs.minor != '') }}
+        with:
+          tag: "v{{ steps.get_version.outputs.major }}.{{ steps.get_version.outputs.minor }}"
+          message: "v{{ steps.get_version.outputs.major }}.{{ steps.get_version.outputs.minor }}"
+          commit_sha: ${{ github.sha }}
+          force_push_tag: true 
+
+      - name: Create or update latest 
+        uses: rickstaa/action-create-tag@v1
+        if: ${{ (steps.check_tag.outputs.tag == '') }}
+        with:
+          tag: "latest"
+          message: "latest"
+          commit_sha: ${{ github.sha }}
+          force_push_tag: true           
+
       - name: git tag skipped
         if: ${{ steps.check_tag.outputs.tag != '' }}
         run: |
