@@ -8,29 +8,54 @@ This is an action to get the version string from project file such as package.js
 
 ```yaml
 steps:
-  - uses: actions/checkout@v2
+  - name: Checkout
+    uses: actions/checkout@v3
 
-  - uses: bbonkr/get-version-action@v1.0.4
+  - uses: bbonkr/get-version-action@v1
     id: get_version
     with:
-      project: "./package.json"
+      project: './package.json'
   - name: logging
     run: |
-      echo "Version=${{ steps.get_version.outputs.version }}"
+      echo "version=${{ steps.get_version.outputs.version }}"
+      echo "major=${{ steps.get_version.outputs.major }}"
+      echo "minor=${{ steps.get_version.outputs.minor }}"
+      echo "patch=${{ steps.get_version.outputs.patch }}"
+      echo "pre-release=${{ steps.get_version.outputs.pre-release }}"
+      echo "build=${{ steps.get_version.outputs.build }}"
 ```
 
 ### Inputs
 
-| Name | Required | Description |
-| :--- | :------: | :---------- |
-| project  | ✅       | Your project file path. Support package.json, .csproj (c# sdk style project file) |
+| Name    | Required | Description                                                                       |
+| :------ | :------: | :-------------------------------------------------------------------------------- |
+| project |    ✅    | Your project file path. Support package.json, .csproj (c# sdk style project file) |
 
 > Support file
-> * package.json
-> * .csproj (c# sdk style project file)
+>
+> - package.json
+> - .csproj (c# sdk style project file)
 
 ### Outputs
 
-| Name | Description |
-| :--- | :---------- |
-| version  | version string, If does not find version string, throws exception. |
+| Name        | Description                                                        |
+| :---------- | :----------------------------------------------------------------- |
+| version     | version string, If does not find version string, throws exception. |
+| major       | major of version (SEMVER[^semver])                                 |
+| minor       | minor of version (SEMVER[^semver])                                 |
+| patch       | patch of version (SEMVER[^semver])                                 |
+| pre-release | pre-release of version (SEMVER[^semver])                           |
+| build       | build of version (SEMVER[^semver])                                 |
+
+e.g.)
+input: `v1.2.3-pre.4+5`
+
+outputs:
+version: `v1.2.3-pre.4+5`
+major: `1`
+minor: `2`
+patch: `3`
+pre-release: `pre.4`
+build: `5`
+
+[^semver]: https://semver.org/

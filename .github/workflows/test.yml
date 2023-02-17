@@ -39,6 +39,11 @@ jobs:
         
       - name: log
         run: |
-          echo "${{ steps.get_version.outputs.version }}"
+          echo "version:      ${{ steps.get_version.outputs.version }}"
+          echo "major:        ${{ steps.get_version.outputs.major }}"
+          echo "minor:        ${{ steps.get_version.outputs.minor }}"
+          echo "patch:        ${{ steps.get_version.outputs.patch }}"
+          echo "pre-release:  ${{ steps.get_version.outputs.pre-release }}"
+          echo "build:        ${{ steps.get_version.outputs.build }}"
 
           
