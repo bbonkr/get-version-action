@@ -11,16 +11,20 @@ jobs:
   build: # make sure build/ci work properly
     runs-on: ubuntu-latest 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
         
       - name: Set Node.js 16.x
         uses: actions/setup-node@v3
         with:
           node-version: 16.x        
 
-      - run: |
+      - name: Install dependenceis
+        run: |
           npm install
-      - run: |
+
+      - name: Run all npm script
+        run: |
           npm run all
 
       - name: get version 
@@ -30,29 +34,11 @@ jobs:
          project: package.json
 
       - name: check tag exists
-        uses: bbonkr/git-tag-check-action@v1.0.12
+        uses: bbonkr/git-tag-check-action@v1
         id: check_tag
         with:
           tag: "v${{ steps.get_version.outputs.version }}"
           github_token: ${{ secrets.GH_TOKEN }}          
-
-      # - name: package-version-to-git-tag
-      #   uses: pkgdeps/git-tag-action@v2
-      #   if: ${{ steps.check_tag.outputs.tag == '' }}
-      #   with:
-      #     github_token: ${{ secrets.GH_TOKEN }}
-      #     github_repo: ${{ github.repository }}
-      #     version: ${{ steps.get_version.outputs.version }}
-      #     git_commit_sha: ${{ github.sha }}
-      #     git_tag_prefix: "v"
-      
-      - name: Create tag current
-        uses: rickstaa/action-create-tag@v1
-        if: ${{ steps.check_tag.outputs.tag == '' }}
-        with:
-          tag: "v{{ steps.get_version.outputs.version }}"
-          message: "v{{ steps.get_version.outputs.version }}"
-          commit_sha: ${{ github.sha }}
 
       - name: Create or update tag major
         uses: rickstaa/action-create-tag@v1
@@ -72,7 +58,7 @@ jobs:
           commit_sha: ${{ github.sha }}
           force_push_tag: true 
 
-      - name: Create or update latest 
+      - name: Create or update latest git tag
         uses: rickstaa/action-create-tag@v1
         if: ${{ (steps.check_tag.outputs.tag == '') }}
         with:
@@ -81,9 +67,17 @@ jobs:
           commit_sha: ${{ github.sha }}
           force_push_tag: true           
 
+      - name: Create current git tag 
+        uses: pkgdeps/git-tag-action@v2
+        if: ${{ steps.check_tag.outputs.tag == '' }}
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          github_repo: ${{ github.repository }}
+          version: ${{ steps.get_version.outputs.version }}
+          git_commit_sha: ${{ github.sha }}
+          git_tag_prefix: "v"
+
       - name: git tag skipped
         if: ${{ steps.check_tag.outputs.tag != '' }}
         run: |
           echo "Tag (v${{ steps.check_tag.outputs.tag }}) is exists already." 
-
-        
