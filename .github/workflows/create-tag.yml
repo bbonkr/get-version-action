@@ -44,8 +44,8 @@ jobs:
         uses: rickstaa/action-create-tag@v1
         if: ${{ (steps.check_tag.outputs.tag == '') && (steps.get_version.outputs.major != '') }}
         with:
-          tag: "v{{ steps.get_version.outputs.major }}"
-          message: "v{{ steps.get_version.outputs.major }}"
+          tag: "v${{ steps.get_version.outputs.major }}"
+          message: "v${{ steps.get_version.outputs.major }}"
           commit_sha: ${{ github.sha }}
           force_push_tag: true 
 
@@ -53,8 +53,8 @@ jobs:
         uses: rickstaa/action-create-tag@v1
         if: ${{ (steps.check_tag.outputs.tag == '') && (steps.get_version.outputs.major != '') && (steps.get_version.outputs.minor != '') }}
         with:
-          tag: "v{{ steps.get_version.outputs.major }}.{{ steps.get_version.outputs.minor }}"
-          message: "v{{ steps.get_version.outputs.major }}.{{ steps.get_version.outputs.minor }}"
+          tag: "v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}"
+          message: "v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}"
           commit_sha: ${{ github.sha }}
           force_push_tag: true 
 
@@ -62,8 +62,8 @@ jobs:
         uses: rickstaa/action-create-tag@v1
         if: ${{ (steps.check_tag.outputs.tag == '') }}
         with:
-          tag: "latest"
-          message: "latest"
+          tag: latest
+          message: latest
           commit_sha: ${{ github.sha }}
           force_push_tag: true           
 
