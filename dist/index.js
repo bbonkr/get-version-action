@@ -59,7 +59,22 @@ const getVersionFromCsproj = (content) => {
     const parser = new xmldom_1.default.DOMParser();
     const xmlDoc = parser.parseFromString(content);
     const node = xpath_1.default.select('string(//Version)', xmlDoc, true);
-    return (_a = node === null || node === void 0 ? void 0 : node.toString()) !== null && _a !== void 0 ? _a : '';
+    const versionText = (_a = node === null || node === void 0 ? void 0 : node.toString()) !== null && _a !== void 0 ? _a : '';
+    if (versionText) {
+        return versionText;
+    }
+    const versionPrefix = xpath_1.default.select('string(//VersionPrefix)', xmlDoc, true);
+    const versionSuffix = xpath_1.default.select('string(//VersionSuffix)', xmlDoc, true);
+    const versionPrefixText = versionPrefix === null || versionPrefix === void 0 ? void 0 : versionPrefix.toString();
+    const versionSuffixText = versionSuffix === null || versionSuffix === void 0 ? void 0 : versionSuffix.toString();
+    if (versionPrefixText) {
+        let versionTextCombined = versionPrefixText;
+        if (versionSuffixText) {
+            versionTextCombined = `${versionTextCombined}-${versionSuffixText}`;
+        }
+        return versionTextCombined;
+    }
+    return '';
 };
 exports.getVersionFromCsproj = getVersionFromCsproj;
 const getVersion = (options) => __awaiter(void 0, void 0, void 0, function* () {

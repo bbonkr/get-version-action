@@ -58,7 +58,12 @@ test('package.json does not have a version', async () => {
 })
 
 test('csproj has version element', () => {
-  const proj = `<Project><Version>1.0.0</Version></Project>`
+  const proj = `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+</Project>`
 
   const version = getVersionFromCsproj(proj)
 
@@ -66,9 +71,84 @@ test('csproj has version element', () => {
 })
 
 test('csproj does not have version element', () => {
-  const proj = `<Project><aersion>1.0.0</aersion></Project>`
+  const proj = `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <aersion>1.0.0</aersion>
+  </PropertyGroup>
+</Project>`
 
   const version = getVersionFromCsproj(proj)
 
   expect(version).toEqual('')
 })
+
+test('csproj has versionprefix element', () => {
+  const proj = `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <VersionPrefix>1.0.0</VersionPrefix>
+  </PropertyGroup>
+</Project>`
+
+  const version = getVersionFromCsproj(proj)
+
+  expect(version).toEqual('1.0.0')
+})
+
+test('csproj has versionPrefix and versionSuffix element', () => {
+  const proj = `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
+  </PropertyGroup>
+</Project>`
+
+  const version = getVersionFromCsproj(proj)
+
+  expect(version).toEqual('1.0.0-alpha')
+})
+
+test('csproj has versionSuffix element only', () => {
+  const proj = `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <VersionSuffix>alpha</VersionSuffix>
+  </PropertyGroup>
+</Project>`
+
+  const version = getVersionFromCsproj(proj)
+
+  expect(version).toEqual('')
+})
+
+test('csproj has version, versionPrefix and versionSuffix element', () => {
+  const proj = `<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+    <Version>1.0.0</Version>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionSuffix>alpha</VersionSuffix>
+  </PropertyGroup>    
+</Project>`
+
+  const version = getVersionFromCsproj(proj)
+
+  expect(version).toEqual('1.0.0')
+})
+
+// test('csproj is invalid format', () => {
+//   const proj = `<?xml version="1.0" encoding="utf-8"?>
+// <Project Sdk="Microsoft.NET.Sdk">
+// 	<PropertyGroup>
+//     <Version>1.0.0</Version2>
+//     <VersionPrefix>2.0.0</VersionPrefix1>
+//     <VersionSuffix>alpha</VersionSuffix2>
+//   </PropertyGroup>
+// </Project>`
+
+//   const version = getVersionFromCsproj(proj)
+
+//   expect(version).toEqual('1.0.0')
+// })
