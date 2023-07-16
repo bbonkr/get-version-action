@@ -1,25 +1,26 @@
 name: 'create-tag'
 
 on:
-  push:
+  pull_request:
     branches:
-      - main 
-    tags:
-      - "!*"
+      - main
+    types:
+      - closed
 
 jobs:
   build: # make sure build/ci work properly
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
-      - name: Set Node.js 16.x
+
+      - name: Set Node.js 18.x
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x        
+          node-version: 18.x
 
-      - name: Install dependenceis
+      - name: Install dependencies
         run: |
           npm install
 
@@ -27,57 +28,107 @@ jobs:
         run: |
           npm run all
 
-      - name: get version 
+  test:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: get version
         uses: ./
         id: get_version
         with:
-         project: package.json
+          project: package.json
 
       - name: check tag exists
         uses: bbonkr/git-tag-check-action@v1
         id: check_tag
         with:
-          tag: "v${{ steps.get_version.outputs.version }}"
-          github_token: ${{ secrets.GH_TOKEN }}          
+          tag: 'v${{ steps.get_version.outputs.version }}'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: logging
+        run: |
+          echo "packgae_version=${{ steps.get_version.outputs.version}}"
+          echo "Found tag=${{ steps.check_tag.outputs.tag }}"
+
+  create_tag:
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    permissions:
+      contents: write
+    steps:
+      - name: Logging github.ref
+        run: |
+          echo "github.ref=${{ github.ref }}"  
+          echo "github.event.pull_request.number=${{ github.event.pull_request.number }}"
+          echo "github.event.pull_request.base.ref=${{ github.event.pull_request.base.ref }}"
+          echo "github.event.pull_request.head.ref=${{ github.event.pull_request.head.ref }}"
+
+      - name: Get next version
+        uses: bbonkr/next-version-proposal-action@v1
+        id: next_version_proposal
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr: ${{ github.event.pull_request.number }}
+          major_labels: 'major, next'
+          minor_labels: 'feature, enhancement'
+          patch_labels: 'bug, dependencies, chore, documentation'
+          next_version_prefix: 'v'
+
+      - name: logging next_version_proposal
+        run: |
+          echo "latest_version=${{ steps.next_version_proposal.outputs.latest_version }}"
+          echo "next_version=${{ steps.next_version_proposal.outputs.next_version }}"
+          echo "next_version_major=${{ steps.next_version_proposal.outputs.next_version_major }}"
+          echo "next_version_minor=${{ steps.next_version_proposal.outputs.next_version_minor }}"
+          echo "next_version_patch=${{ steps.next_version_proposal.outputs.next_version_patch }}"
 
       - name: Create or update tag major
         uses: rickstaa/action-create-tag@v1
-        if: ${{ (steps.check_tag.outputs.tag == '') && (steps.get_version.outputs.major != '') }}
+        if: ${{ (steps.next_version_proposal.outputs.next_version != '') && (steps.next_version_proposal.outputs.next_version_major != '') }}
         with:
-          tag: "v${{ steps.get_version.outputs.major }}"
-          message: "v${{ steps.get_version.outputs.major }}"
+          tag: 'v${{ steps.next_version_proposal.outputs.next_version_major }}'
+          message: 'Overwrite v${{ steps.next_version_proposal.outputs.next_version_major }}'
           commit_sha: ${{ github.sha }}
-          force_push_tag: true 
+          force_push_tag: true
 
       - name: Create or update tag major.minor
         uses: rickstaa/action-create-tag@v1
-        if: ${{ (steps.check_tag.outputs.tag == '') && (steps.get_version.outputs.major != '') && (steps.get_version.outputs.minor != '') }}
+        if: ${{ (steps.next_version_proposal.outputs.next_version != '') && (steps.next_version_proposal.outputs.next_version_major != '') && (steps.next_version_proposal.outputs.next_version_minor != '') }}
         with:
-          tag: "v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}"
-          message: "v${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}"
+          tag: 'v${{ steps.next_version_proposal.outputs.next_version_major }}.${{ steps.next_version_proposal.outputs.next_version_minor }}'
+          message: 'Overwrite v${{ steps.next_version_proposal.outputs.next_version_major }}.${{ steps.next_version_proposal.outputs.next_version_minor }}'
           commit_sha: ${{ github.sha }}
-          force_push_tag: true 
+          force_push_tag: true
 
-      - name: Create or update latest git tag
+      - name: Create tag current
         uses: rickstaa/action-create-tag@v1
-        if: ${{ (steps.check_tag.outputs.tag == '') }}
+        if: ${{ steps.next_version_proposal.outputs.next_version != '' }}
         with:
-          tag: latest
-          message: latest
+          tag: '${{ steps.next_version_proposal.outputs.next_version }}'
+          message: 'New release ${{ steps.next_version_proposal.outputs.next_version }}'
           commit_sha: ${{ github.sha }}
-          force_push_tag: true           
 
-      - name: Create current git tag 
-        uses: pkgdeps/git-tag-action@v2
-        if: ${{ steps.check_tag.outputs.tag == '' }}
+      - name: create GitHub Release
+        id: release_drafter
+        uses: release-drafter/release-drafter@v5
+        if: ${{ steps.next_version_proposal.outputs.next_version != '' }}
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          github_repo: ${{ github.repository }}
-          version: ${{ steps.get_version.outputs.version }}
-          git_commit_sha: ${{ github.sha }}
-          git_tag_prefix: "v"
+          config-name: release-drafter.yml
+          version: ${{ steps.next_version_proposal.outputs.next_version }}
+          publish: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: git tag skipped
-        if: ${{ steps.check_tag.outputs.tag != '' }}
+        if: ${{ steps.next_version_proposal.outputs.next_version == '' }}
         run: |
-          echo "Tag (v${{ steps.check_tag.outputs.tag }}) is exists already." 
+          echo "Next version tag is empty."
