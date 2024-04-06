@@ -11,6 +11,10 @@ async function run(): Promise<void> {
   let message = ''
   try {
     const project = core.getInput(inputs.project)
+    const showLogMessageString = core.getInput(inputs.showLogMessage)
+    const showLogMessage =
+      Boolean(showLogMessageString) &&
+      showLogMessageString.toLocaleLowerCase() === 'true'
 
     const projectPath = path.resolve(workspace, project)
 
@@ -20,9 +24,14 @@ async function run(): Promise<void> {
       throw new Error(message)
     }
 
-    core.notice(`File path: ${projectPath}`)
+    if (showLogMessage) {
+      core.notice(`File path: ${projectPath}`)
+    }
 
-    const result = await getVersion({project: projectPath})
+    const result = await getVersion({
+      project: projectPath,
+      showLogMessage
+    })
 
     if (!result) {
       message = 'Could not find version'

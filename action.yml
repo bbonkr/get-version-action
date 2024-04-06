@@ -1,26 +1,30 @@
-name: 'get-version-action'
-description: 'Get version string from your project file'
-author: 'bbonkr'
+name: "get-version-action"
+description: "Get version string from your project file"
+author: "bbonkr"
 branding:
-  color: purple 
+  color: purple
   icon: check
 inputs:
-  project: 
+  project:
     required: true
-    description: 'Project file path'
+    description: "Project file path"
+  show_log_message:
+    required: false
+    default: "false"
+    description: "Value has to be `true` or `false`; Show message or not in the console. Shows error log always even set false."
 outputs:
   version:
-    description: 'Found version'
+    description: "Found version"
   major:
-    description: 'Major of SEMVER'
+    description: "Major of SEMVER"
   minor:
-    description: 'Minor of SEMVER'
+    description: "Minor of SEMVER"
   patch:
-    description: 'Patch of SEMVER'
+    description: "Patch of SEMVER"
   pre-release:
-    description: 'Pre-release of SEMVER'
+    description: "Pre-release of SEMVER"
   build:
-    description: 'Build of SEMVER'
+    description: "Build of SEMVER"
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
+  using: "node20"
+  main: "dist/index.js"

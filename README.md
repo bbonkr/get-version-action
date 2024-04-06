@@ -9,7 +9,7 @@ This is an action to get the version string from project file such as package.js
 ```yaml
 steps:
   - name: Checkout
-    uses: actions/checkout@v3
+    uses: actions/checkout@v4
 
   - uses: bbonkr/get-version-action@v1
     id: get_version

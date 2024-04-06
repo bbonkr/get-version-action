@@ -1,3 +1,4 @@
 export const inputs = {
-  project: 'project'
+  project: 'project',
+  showLogMessage: 'show_log_message: '
 }

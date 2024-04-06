@@ -1,6 +1,6 @@
 {
   "name": "get-version-action",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "This is an action to get the version string from project file such as package.json, .csproj (c# sdk style project file)",
   "main": "lib/main.js",
   "scripts": {
