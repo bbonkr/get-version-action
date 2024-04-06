@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set Node.js 18.x
-        uses: actions/setup-node@v3
+      - name: Set Node.js 20.x
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
 
       - name: Install dependencies
         run: |
@@ -30,17 +30,19 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set Node.js 18.x
-        uses: actions/setup-node@v3
+      - name: Set Node.js 20.x
+        uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 20.x
 
       - uses: ./
         id: get_version
         with:
           project: ./package.json
+          show_log_message: false
 
       - name: log
         run: |

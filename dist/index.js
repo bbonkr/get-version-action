@@ -78,8 +78,10 @@ const getVersionFromCsproj = (content) => {
 };
 exports.getVersionFromCsproj = getVersionFromCsproj;
 const getVersion = (options) => __awaiter(void 0, void 0, void 0, function* () {
-    const { project } = options;
-    core.debug(`project path: ${project}`);
+    const { project, showLogMessage } = options;
+    if (showLogMessage) {
+        core.debug(`project path: ${project}`);
+    }
     // const projectFilePath = path.resolve(project)
     const projectFilePath = project;
     const extname = path.extname(projectFilePath);
@@ -113,7 +115,8 @@ exports.getVersion = getVersion;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.inputs = void 0;
 exports.inputs = {
-    project: 'project'
+    project: 'project',
+    showLogMessage: 'show_log_message'
 };
 
 
@@ -172,15 +175,27 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         let message = '';
         try {
-            const project = core.getInput(inputs_1.inputs.project);
+            const project = core.getInput(inputs_1.inputs.project, {
+                trimWhitespace: true
+            });
+            const showLogMessageString = core.getInput(inputs_1.inputs.showLogMessage, {
+                trimWhitespace: true
+            });
+            const showLogMessage = Boolean(showLogMessageString) &&
+                showLogMessageString.toLocaleLowerCase() === 'true';
             const projectPath = path_1.default.resolve(workspace, project);
             if (!projectPath) {
                 message = 'Does not provide exists file path';
                 core.error(message);
                 throw new Error(message);
             }
-            core.notice(`File path: ${projectPath}`);
-            const result = yield (0, getVersion_1.getVersion)({ project: projectPath });
+            if (showLogMessage) {
+                core.notice(`File path: ${projectPath}`);
+            }
+            const result = yield (0, getVersion_1.getVersion)({
+                project: projectPath,
+                showLogMessage
+            });
             if (!result) {
                 message = 'Could not find version';
                 core.error(message);

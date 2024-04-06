@@ -6,6 +6,7 @@ import xpath from 'xpath'
 
 interface GetVersionOptions {
   project: string
+  showLogMessage?: boolean
 }
 
 export const getVersionFromPackageJson = (content: string): string => {
@@ -50,9 +51,11 @@ export const getVersionFromCsproj = (content: string): string => {
 export const getVersion = async (
   options: GetVersionOptions
 ): Promise<string> => {
-  const {project} = options
+  const {project, showLogMessage} = options
 
-  core.debug(`project path: ${project}`)
+  if (showLogMessage) {
+    core.debug(`project path: ${project}`)
+  }
   // const projectFilePath = path.resolve(project)
   const projectFilePath = project
   const extname = path.extname(projectFilePath)
