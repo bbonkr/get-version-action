@@ -116,7 +116,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.inputs = void 0;
 exports.inputs = {
     project: 'project',
-    showLogMessage: 'show_log_message: '
+    showLogMessage: 'show_log_message'
 };
 
 
@@ -175,8 +175,12 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         let message = '';
         try {
-            const project = core.getInput(inputs_1.inputs.project);
-            const showLogMessageString = core.getInput(inputs_1.inputs.showLogMessage);
+            const project = core.getInput(inputs_1.inputs.project, {
+                trimWhitespace: true
+            });
+            const showLogMessageString = core.getInput(inputs_1.inputs.showLogMessage, {
+                trimWhitespace: true
+            });
             const showLogMessage = Boolean(showLogMessageString) &&
                 showLogMessageString.toLocaleLowerCase() === 'true';
             const projectPath = path_1.default.resolve(workspace, project);
