@@ -15,6 +15,7 @@ steps:
     id: get_version
     with:
       project: './package.json'
+      show_log_message: true
   - name: logging
     run: |
       echo "version=${{ steps.get_version.outputs.version }}"
@@ -30,6 +31,7 @@ steps:
 | Name    | Required | Description                                                                       |
 | :------ | :------: | :-------------------------------------------------------------------------------- |
 | project |    ✅    | Your project file path. Support package.json, .csproj (c# sdk style project file) |
+| show_log_message | | Show message or not in the console. Shows error log always even set false. Value has to be `true` or something else; |
 
 > Support file
 >
