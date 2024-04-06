@@ -42,6 +42,7 @@ jobs:
         id: get_version
         with:
           project: ./package.json
+          show_log_message: false
 
       - name: log
         run: |
