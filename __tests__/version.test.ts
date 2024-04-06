@@ -2,7 +2,7 @@ import {expect, describe, it} from '@jest/globals'
 import {parseVersion} from '../src/version'
 
 describe('parseVersion tests', () => {
-  it('should returns versoin when input value is valid as version', () => {
+  it('should returns version when input value is valid as version', () => {
     // Arrange
     const value = 'v1.2.3-pre.12+21'
     // Act
@@ -15,7 +15,7 @@ describe('parseVersion tests', () => {
     expect(version.build).toBe('21')
   })
 
-  it('should returns versoin when input value is valid as version without v prefix', () => {
+  it('should returns version when input value is valid as version without v prefix', () => {
     // Arrange
     const value = '1.2.3-pre.12+21'
     // Act
@@ -28,7 +28,7 @@ describe('parseVersion tests', () => {
     expect(version.build).toBe('21')
   })
 
-  it('should returns versoin when input value does not have build and pre-release', () => {
+  it('should returns version when input value does not have build and pre-release', () => {
     // Arrange
     const value = 'v1.2.3'
     // Act
@@ -41,7 +41,7 @@ describe('parseVersion tests', () => {
     expect(version.build).toBe(undefined)
   })
 
-  it('should returns versoin without v prefix when input value does not have build and pre-release', () => {
+  it('should returns version without v prefix when input value does not have build and pre-release', () => {
     // Arrange
     const value = '1.2.3'
     // Act
@@ -54,7 +54,7 @@ describe('parseVersion tests', () => {
     expect(version.build).toBe(undefined)
   })
 
-  it('should returns versoin when input value has pre-release and no build', () => {
+  it('should returns version when input value has pre-release and no build', () => {
     // Arrange
     const value = 'v1.2.3-pre.1'
     // Act
@@ -67,7 +67,7 @@ describe('parseVersion tests', () => {
     expect(version.build).toBe(undefined)
   })
 
-  it('should returns versoin without v prefix when input value has pre-release and no build', () => {
+  it('should returns version without v prefix when input value has pre-release and no build', () => {
     // Arrange
     const value = '1.2.3-pre.1'
     // Act
@@ -80,7 +80,7 @@ describe('parseVersion tests', () => {
     expect(version.build).toBe(undefined)
   })
 
-  it('should returns versoin when input value has build and no pre-release', () => {
+  it('should returns version when input value has build and no pre-release', () => {
     // Arrange
     const value = 'v1.2.3+21'
     // Act
@@ -93,7 +93,7 @@ describe('parseVersion tests', () => {
     expect(version.build).toBe('21')
   })
 
-  it('should returns versoin without v prefix when input value has build and no pre-release', () => {
+  it('should returns version without v prefix when input value has build and no pre-release', () => {
     // Arrange
     const value = '1.2.3+21'
     // Act

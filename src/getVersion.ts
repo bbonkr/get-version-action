@@ -22,7 +22,29 @@ export const getVersionFromCsproj = (content: string): string => {
 
   const node = xpath.select('string(//Version)', xmlDoc, true)
 
-  return node?.toString() ?? ''
+  const versionText = node?.toString() ?? ''
+
+  if (versionText) {
+    return versionText
+  }
+
+  const versionPrefix = xpath.select('string(//VersionPrefix)', xmlDoc, true)
+  const versionSuffix = xpath.select('string(//VersionSuffix)', xmlDoc, true)
+
+  const versionPrefixText = versionPrefix?.toString()
+  const versionSuffixText = versionSuffix?.toString()
+
+  if (versionPrefixText) {
+    let versionTextCombined = versionPrefixText
+
+    if (versionSuffixText) {
+      versionTextCombined = `${versionTextCombined}-${versionSuffixText}`
+    }
+
+    return versionTextCombined
+  }
+
+  return ''
 }
 
 export const getVersion = async (
