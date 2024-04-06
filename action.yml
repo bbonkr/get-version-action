@@ -10,7 +10,6 @@ inputs:
     description: "Project file path"
   show_log_message:
     required: false
-    default: "false"
     description: "Value has to be `true` or `false`; Show message or not in the console. Shows error log always even set false."
 outputs:
   version:

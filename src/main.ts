@@ -10,8 +10,12 @@ const workspace = process.env.GITHUB_WORKSPACE ?? ''
 async function run(): Promise<void> {
   let message = ''
   try {
-    const project = core.getInput(inputs.project)
-    const showLogMessageString = core.getInput(inputs.showLogMessage)
+    const project = core.getInput(inputs.project, {
+      trimWhitespace: true
+    })
+    const showLogMessageString = core.getInput(inputs.showLogMessage, {
+      trimWhitespace: true
+    })
     const showLogMessage =
       Boolean(showLogMessageString) &&
       showLogMessageString.toLocaleLowerCase() === 'true'
