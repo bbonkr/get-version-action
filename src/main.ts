@@ -20,7 +20,7 @@ async function run(): Promise<void> {
       throw new Error(message)
     }
 
-    core.notice(`File path: ${projectPath}`)
+    core.info(`File path: ${projectPath}`)
 
     const result = await getVersion({project: projectPath})
 
