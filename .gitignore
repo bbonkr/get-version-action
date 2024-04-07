@@ -105,3 +105,6 @@ lib/**/*
 
 assets/bin/
 assets/obj/
+.mono/
+
+get-version-action.sln

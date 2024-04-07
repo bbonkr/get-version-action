@@ -1,0 +1,89 @@
+name: 'PR completed'
+
+on: # rebuild any PRs and main branch changes
+  pull_request:
+    types: ['closed']
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  MAIN_BRANCH_NAME: main
+  DEFAULT_BRANCH_NAME: dev
+  PROJECT_NAME: ''
+
+jobs:
+  build: # make sure build/ci work properly
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'dev'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install dependencies
+        run: |
+          npm install
+
+      - name: Run all npm script
+        run: |
+          npm run all
+
+      - name: Run test script
+        run: |
+          npm run test
+
+  create-tag:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get overview of PR
+        uses: bbonkr/get-overview-of-pull-requests-action@v1
+        id: get_overview
+        with:
+          github_token: ${{ github.token }}
+          base: ${{ env.MAIN_BRANCH_NAME }}
+          head: ${{ github.event.pull_request.base.ref }}
+          default_branch: ${{ env.DEFAULT_BRANCH_NAME }}
+
+      - name: logging
+        run: |
+          echo "title:       ${{ steps.get_overview.outputs.title }}"
+          echo "body:        ${{ steps.get_overview.outputs.body }}"
+          echo "labels:      ${{ steps.get_overview.outputs.labels }}"
+          echo "milestone:   ${{ steps.get_overview.outputs.milestone }}"
+          echo "assignees:   ${{ steps.get_overview.outputs.assignees }}"
+          echo "reviewers:   ${{ steps.get_overview.outputs.reviewers }}"
+          echo "pull_number: ${{ steps.get_overview.outputs.pull_number }}"
+
+      - name: Create pull
+        if: ${{ steps.get_overview.outputs.pull_number == '' }}
+        run: |
+          gh pr create --base ${{ env.MAIN_BRANCH_NAME }} \
+            --head ${{ github.event.pull_request.base.ref }} \
+            --label '${{ steps.get_overview.outputs.labels }}' \
+            --project '${{ env.PROJECT_NAME }}' \
+            --reviewer ${{ steps.get_overview.outputs.reviewers }} \
+            --assignee ${{ steps.get_overview.outputs.assignees }} \
+            --body '${{ steps.get_overview.outputs.body }}' \
+            --title 'Release ${{ env.MAIN_BRANCH_NAME }} 🚀'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Update pull
+        if: ${{ steps.get_overview.outputs.pull_number != '' }}
+        run: |
+          gh pr edit ${{ env.MAIN_BRANCH_NAME }} \
+            --body '${{ steps.get_overview.outputs.body }}' \
+            --title '${{ env.MAIN_BRANCH_NAME }}' \
+            --add-label '${{ steps.get_overview.outputs.labels }}'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

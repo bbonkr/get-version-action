@@ -1,4 +1,4 @@
-name: 'Verify PR'
+name: "Verify PR"
 
 on: # rebuild any PRs and main branch changes
   pull_request:
@@ -25,6 +25,10 @@ jobs:
       - name: Run all npm script
         run: |
           npm run all
+
+      - name: Run test script
+        run: |
+          npm run test
 
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
